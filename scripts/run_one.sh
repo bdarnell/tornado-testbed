@@ -143,6 +143,9 @@ echo "--- test output ---" | tee -a "${log}"
 
 test_start=$(date +%s)
 set +e
+# Save coverage data to a canonical per-package path so gen_reports.sh can find it.
+mkdir -p "${ROOT_DIR}/coverage"
+export COVERAGE_FILE="${ROOT_DIR}/coverage/${name}.coverage"
 (cd "${work}" && timeout "${TIMEOUT_SECS}" bash -c "${test_cmd}") >>"${log}" 2>&1
 rc=$?
 set -e
