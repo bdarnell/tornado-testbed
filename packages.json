@@ -1,0 +1,105 @@
+{
+  "description": "Top 10 Python packages that directly depend on Tornado, selected by a combination of GitHub stars and PyPI download volume. Each entry has the information needed to clone and run the project's own test suite in an isolated uv-managed environment.",
+  "selection_criteria": [
+    "Declares tornado in install_requires/pyproject.toml (direct, not transitive)",
+    "Popular on GitHub (stars) and/or PyPI (downloads)",
+    "Active repository with runnable tests"
+  ],
+  "packages": [
+    {
+      "name": "streamlit",
+      "repo": "https://github.com/streamlit/streamlit",
+      "ref": "1.40.0",
+      "reason": "Streamlit ML/data-app framework, ~35k GitHub stars; uses Tornado for its web server.",
+      "subdir": "lib",
+      "setup_extra": "cd .. && protoc --proto_path=proto --python_out=lib proto/streamlit/proto/*.proto",
+      "test_cmd": "python -m pytest -o addopts= tests/streamlit/web/server/routes_test.py -x -q",
+      "notes": "setup_extra generates Python protobuf bindings (needed before any streamlit import). Runs a focused subset of the unit tests (full suite needs a built frontend and many extras)."
+    },
+    {
+      "name": "bokeh",
+      "repo": "https://github.com/bokeh/bokeh",
+      "ref": "3.6.1",
+      "reason": "Bokeh interactive visualization, ~19k stars; Bokeh server is built on Tornado.",
+      "subdir": ".",
+      "test_cmd": "uv pip install -q pytest-timeout pytest-asyncio && python -m pytest -o asyncio_mode=auto -W 'ignore::pytest.PytestWarning' tests/unit/bokeh/server/test_tornado__server.py -q",
+      "notes": "Full bokeh tests require selenium/node; we target the tornado-specific server tests."
+    },
+    {
+      "name": "jupyter_server",
+      "repo": "https://github.com/jupyter-server/jupyter_server",
+      "ref": "v2.14.2",
+      "reason": "Core backend for Jupyter Notebook / JupyterLab; Tornado is its HTTP engine.",
+      "subdir": ".",
+      "test_cmd": "python -m pytest tests/test_utils.py tests/test_version.py tests/test_traittypes.py tests/test_serialize.py -x -q",
+      "notes": "Pure-function tests that don't instantiate a live ServerApp. ServerApp-based tests hit an unrelated jupyter_events>=0.12 schema-version incompat when they load the built-in event schemas."
+    },
+    {
+      "name": "notebook",
+      "repo": "https://github.com/jupyter/notebook",
+      "ref": "v7.2.2",
+      "reason": "Classic Jupyter Notebook UI, ~11k stars; transitively pulls Tornado through jupyter_server.",
+      "subdir": ".",
+      "test_cmd": "python -m pytest tests/test_app.py -x -q",
+      "notes": "Focused import / app startup tests."
+    },
+    {
+      "name": "jupyterhub",
+      "repo": "https://github.com/jupyterhub/jupyterhub",
+      "ref": "5.2.1",
+      "reason": "Multi-user Jupyter server, ~8k stars; Tornado-based.",
+      "subdir": ".",
+      "test_cmd": "python -m pytest jupyterhub/tests/test_version.py jupyterhub/tests/test_utils.py -x -q",
+      "notes": "Full suite needs a JS build and a database; we run logic-only tests."
+    },
+    {
+      "name": "distributed",
+      "repo": "https://github.com/dask/distributed",
+      "ref": "2024.10.0",
+      "reason": "Dask distributed scheduler, ~1.6k stars; communications layer uses Tornado.",
+      "subdir": ".",
+      "test_cmd": "uv pip install -q pytest-timeout && python -m pytest -o addopts= distributed/tests/test_versions.py -x -q",
+      "notes": "Pinning a small test module; full suite is multi-hour."
+    },
+    {
+      "name": "flower",
+      "repo": "https://github.com/mher/flower",
+      "ref": "v2.0.1",
+      "reason": "Celery monitoring web UI, ~6.5k stars; Flower is a Tornado application.",
+      "subdir": ".",
+      "test_cmd": "python -m pytest tests/ -x -q",
+      "notes": "Full test suite is small and self-contained."
+    },
+    {
+      "name": "ipykernel",
+      "repo": "https://github.com/ipython/ipykernel",
+      "ref": "v6.29.5",
+      "reason": "IPython kernel for Jupyter, ~650 stars; uses Tornado via jupyter_client.",
+      "subdir": ".",
+      "test_cmd": "python -m pytest tests/test_kernelspec.py -x -q",
+      "notes": "Kernel spec tests don't need a running kernel."
+    },
+    {
+      "name": "panel",
+      "repo": "https://github.com/holoviz/panel",
+      "ref": "v1.5.3",
+      "reason": "HoloViz Panel dashboards, ~5k stars; built on Bokeh/Tornado.",
+      "subdir": ".",
+      "install_method": "pypi",
+      "pypi_spec": "panel==1.5.3 pytest pytest-asyncio",
+      "test_cmd": "python -m pytest -o addopts= panel/tests/test_util.py -x -q",
+      "notes": "Installing the published wheel because the source build runs a full npm/bokeh bundling step. Tests are still run from the checkout."
+    },
+    {
+      "name": "voila",
+      "repo": "https://github.com/voila-dashboards/voila",
+      "ref": "v0.5.8",
+      "reason": "Render Jupyter notebooks as standalone apps, ~5.4k stars; Tornado-based server.",
+      "subdir": ".",
+      "install_method": "pypi",
+      "pypi_spec": "voila==0.5.8 pytest",
+      "test_cmd": "python -m pytest -o addopts= tests/utils_test.py -x -q",
+      "notes": "Source build tries to fetch bundled CSS from a URL that 403s in sandboxed envs; install the published wheel and run the test files from the checkout."
+    }
+  ]
+}
