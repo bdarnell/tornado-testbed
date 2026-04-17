@@ -1,15 +1,15 @@
 PACKAGE            STATUS    RC       TORNADO    TIME(s)     
 -------            ------    --       -------    -------     
-streamlit          PASS      0        6.5.5      13          
-bokeh              PASS      0        6.5.5      9           
-jupyter_server     PASS      0        6.5.5      13          
-notebook           PASS      0        6.5.5      13          
-jupyterhub         PASS      0        6.5.5      16          
-distributed        PASS      0        6.5.5      8           
-flower             PASS      0        6.5.5      9           
-ipykernel          PASS      0        6.5.5      8           
-panel              PASS      0        6.5.5      16          
-voila              PASS      0        6.5.5      15          
+streamlit          PASS      0        6.5.5      16          
+bokeh              PASS      0        6.5.5      11          
+jupyter_server     PASS      0        6.5.5      17          
+notebook           PASS      0        6.5.5      15          
+jupyterhub         PASS      0        6.5.5      18          
+distributed        PASS      0        6.5.5      9           
+flower             PASS      0        6.5.5      10          
+ipykernel          PASS      0        6.5.5      10          
+panel              PASS      0        6.5.5      19          
+voila              PASS      0        6.5.5      17          
 
 Full logs in /home/user/tornado-testbed/logs/
 Per-package results in /home/user/tornado-testbed/results/
