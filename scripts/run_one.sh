@@ -66,24 +66,6 @@ source "${venv}/bin/activate"
 
 install_start=$(date +%s)
 
-# Optional per-package pre-install step (protoc codegen, etc).
-if [[ -n "${setup_extra}" ]]; then
-    echo ">>> setup_extra: ${setup_extra}" >>"${log}"
-    if ! (cd "${work}" && bash -c "${setup_extra}") >>"${log}" 2>&1; then
-        echo "setup_extra failed" | tee -a "${log}"
-        {
-            echo "package=${name}"
-            echo "status=SETUP_FAIL"
-            echo "exit_code=4"
-            echo "tornado=n/a"
-            echo "install_secs=0"
-            echo "test_secs=0"
-        } > "${result}"
-        deactivate || true
-        exit 4
-    fi
-fi
-
 # Install the package.
 install_ok=0
 if [[ "${install_method}" == "pypi" ]]; then
@@ -123,8 +105,28 @@ if [[ "${install_ok}" -ne 1 ]]; then
     exit 3
 fi
 
-# Test runner is almost always pytest; make sure it's available.
-uv pip install pytest >>"${log}" 2>&1 || true
+# Optional per-package post-install step (protoc codegen, etc).
+# Runs after package installation so that dep resolution (e.g. protobuf version)
+# is constrained by what the package already requires.
+if [[ -n "${setup_extra}" ]]; then
+    echo ">>> setup_extra: ${setup_extra}" >>"${log}"
+    if ! (cd "${work}" && bash -c "${setup_extra}") >>"${log}" 2>&1; then
+        echo "setup_extra failed" | tee -a "${log}"
+        {
+            echo "package=${name}"
+            echo "status=SETUP_FAIL"
+            echo "exit_code=4"
+            echo "tornado=n/a"
+            echo "install_secs=$(( $(date +%s) - install_start ))"
+            echo "test_secs=0"
+        } > "${result}"
+        deactivate || true
+        exit 4
+    fi
+fi
+
+# Test runner is almost always pytest; make sure it and coverage are available.
+uv pip install pytest pytest-cov >>"${log}" 2>&1 || true
 
 # Force the Tornado we want to test against.
 uv pip install --upgrade "${TORNADO_SPEC}" >>"${log}" 2>&1 || {
@@ -141,6 +143,9 @@ echo "--- test output ---" | tee -a "${log}"
 
 test_start=$(date +%s)
 set +e
+# Save coverage data to a canonical per-package path so gen_reports.sh can find it.
+mkdir -p "${ROOT_DIR}/coverage"
+export COVERAGE_FILE="${ROOT_DIR}/coverage/${name}.coverage"
 (cd "${work}" && timeout "${TIMEOUT_SECS}" bash -c "${test_cmd}") >>"${log}" 2>&1
 rc=$?
 set -e

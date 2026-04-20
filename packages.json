@@ -12,9 +12,9 @@
       "ref": "1.40.0",
       "reason": "Streamlit ML/data-app framework, ~35k GitHub stars; uses Tornado for its web server.",
       "subdir": "lib",
-      "setup_extra": "cd .. && protoc --proto_path=proto --python_out=lib proto/streamlit/proto/*.proto",
-      "test_cmd": "python -m pytest -o addopts= tests/streamlit/web/server/routes_test.py -x -q",
-      "notes": "setup_extra generates Python protobuf bindings (needed before any streamlit import). Runs a focused subset of the unit tests (full suite needs a built frontend and many extras)."
+      "setup_extra": "uv pip install -q grpcio-tools && cd .. && python -m grpc_tools.protoc --proto_path=proto --python_out=lib proto/streamlit/proto/*.proto",
+      "test_cmd": "python -m pytest -o addopts= -o log_level=WARNING tests/streamlit/web/server/routes_test.py tests/streamlit/web/server/browser_websocket_handler_test.py tests/streamlit/web/server/stats_handler_test.py tests/streamlit/web/server/component_request_handler_test.py tests/streamlit/web/server/upload_file_request_handler_test.py tests/streamlit/web/server/websocket_headers_test.py tests/streamlit/web/server/app_static_file_handler_test.py -q --cov=tornado --cov-report=term-missing",
+      "notes": "setup_extra generates Python protobuf bindings after package install so grpcio-tools resolves against the already-pinned protobuf<6. Runs server-layer unit tests (the full suite needs a built frontend and many extras). Tornado coverage ~21%. Uses tornado.websocket for browser WebSocket connections, tornado.testing (AsyncHTTPTestCase) as the foundation for its own server test helpers, and tornado.template for HTML page rendering."
     },
     {
       "name": "bokeh",
@@ -22,8 +22,8 @@
       "ref": "3.6.1",
       "reason": "Bokeh interactive visualization, ~19k stars; Bokeh server is built on Tornado.",
       "subdir": ".",
-      "test_cmd": "uv pip install -q pytest-timeout pytest-asyncio && python -m pytest -o asyncio_mode=auto -W 'ignore::pytest.PytestWarning' tests/unit/bokeh/server/test_tornado__server.py -q",
-      "notes": "Full bokeh tests require selenium/node; we target the tornado-specific server tests."
+      "test_cmd": "uv pip install -q pytest-timeout pytest-asyncio && python -m pytest -o asyncio_mode=auto -W 'ignore::pytest.PytestWarning' tests/unit/bokeh/server/test_tornado__server.py -q --cov=tornado --cov-report=term-missing",
+      "notes": "Full bokeh tests require selenium/node; we target the tornado-specific server tests. Tornado coverage ~18%. Uses tornado.websocket for push updates to the browser, tornado.queues for buffering session messages, and tornado.locks for per-session serialization. Does not use tornado.testing or tornado.auth."
     },
     {
       "name": "jupyter_server",
@@ -31,8 +31,8 @@
       "ref": "v2.14.2",
       "reason": "Core backend for Jupyter Notebook / JupyterLab; Tornado is its HTTP engine.",
       "subdir": ".",
-      "test_cmd": "python -m pytest tests/test_utils.py tests/test_version.py tests/test_traittypes.py tests/test_serialize.py -x -q",
-      "notes": "Pure-function tests that don't instantiate a live ServerApp. ServerApp-based tests hit an unrelated jupyter_events>=0.12 schema-version incompat when they load the built-in event schemas."
+      "test_cmd": "python -m pytest tests/test_utils.py tests/test_version.py tests/test_traittypes.py tests/test_serialize.py -x -q --cov=tornado --cov-report=term-missing",
+      "notes": "Pure-function tests that don't instantiate a live ServerApp. ServerApp-based tests hit an unrelated jupyter_events>=0.12 schema-version incompat when they load the built-in event schemas. Tornado coverage ~6% (only import-time paths exercised). Uses tornado.testing as its own test base class infrastructure, and tornado.websocket for kernel and terminal communication channels."
     },
     {
       "name": "notebook",
@@ -40,8 +40,8 @@
       "ref": "v7.2.2",
       "reason": "Classic Jupyter Notebook UI, ~11k stars; transitively pulls Tornado through jupyter_server.",
       "subdir": ".",
-      "test_cmd": "python -m pytest tests/test_app.py -x -q",
-      "notes": "Focused import / app startup tests."
+      "test_cmd": "python -m pytest tests/test_app.py -x -q --cov=tornado --cov-report=term-missing",
+      "notes": "Focused import / app startup tests; only has one test file. Tornado coverage ~10%. Uses tornado.template for rendering notebook HTML pages, and tornado.websocket for the notebook kernel communication channel."
     },
     {
       "name": "jupyterhub",
@@ -49,8 +49,8 @@
       "ref": "5.2.1",
       "reason": "Multi-user Jupyter server, ~8k stars; Tornado-based.",
       "subdir": ".",
-      "test_cmd": "python -m pytest jupyterhub/tests/test_version.py jupyterhub/tests/test_utils.py -x -q",
-      "notes": "Full suite needs a JS build and a database; we run logic-only tests."
+      "test_cmd": "python -m pytest jupyterhub/tests/test_version.py jupyterhub/tests/test_utils.py -x -q --cov=tornado --cov-config=/dev/null --cov-report=term-missing",
+      "notes": "Full suite needs a JS build and a database; we run logic-only tests. --cov-config=/dev/null bypasses the project's .coveragerc which omits site-packages. Tornado coverage ~9%. Uses tornado.options for CLI/config parsing (uncommon among these packages), tornado.gen and tornado.concurrent heavily for OAuth and auth-provider coroutine flows, and tornado.log for structured log formatting."
     },
     {
       "name": "distributed",
@@ -58,8 +58,8 @@
       "ref": "2024.10.0",
       "reason": "Dask distributed scheduler, ~1.6k stars; communications layer uses Tornado.",
       "subdir": ".",
-      "test_cmd": "uv pip install -q pytest-timeout && python -m pytest -o addopts= distributed/tests/test_versions.py -x -q",
-      "notes": "Pinning a small test module; full suite is multi-hour."
+      "test_cmd": "uv pip install -q pytest-timeout && python -m pytest -o addopts= distributed/tests/test_versions.py -x -q --cov=tornado --cov-report=term-missing",
+      "notes": "Pinning a small test module; full suite is multi-hour. Tornado coverage ~4% overall, but individual module coverage is high for the networking layer: iostream ~40%, tcpclient ~38%, tcpserver ~32%, platform.asyncio ~40%. Distinctive usage: uses only tornado's bare TCP networking layer (iostream, tcpserver, tcpclient) without the HTTP/web framework at all. No usage of tornado.web, tornado.websocket, or tornado.httpclient."
     },
     {
       "name": "flower",
@@ -67,8 +67,8 @@
       "ref": "v2.0.1",
       "reason": "Celery monitoring web UI, ~6.5k stars; Flower is a Tornado application.",
       "subdir": ".",
-      "test_cmd": "python -m pytest tests/ -x -q",
-      "notes": "Full test suite is small and self-contained."
+      "test_cmd": "python -m pytest tests/ -x -q --cov=tornado --cov-report=term-missing",
+      "notes": "Full test suite is small and self-contained. Tornado coverage ~20%. The most complete 'classic Tornado app' usage in this set: uses tornado.auth for OAuth2/Google login integration (the only package here that exercises tornado.auth), tornado.options for CLI argument parsing, tornado.template for HTML rendering (76% coverage, highest among all packages), tornado.locale for i18n, and tornado.testing as its test base."
     },
     {
       "name": "ipykernel",
@@ -76,8 +76,8 @@
       "ref": "v6.29.5",
       "reason": "IPython kernel for Jupyter, ~650 stars; uses Tornado via jupyter_client.",
       "subdir": ".",
-      "test_cmd": "python -m pytest tests/test_kernelspec.py -x -q",
-      "notes": "Kernel spec tests don't need a running kernel."
+      "test_cmd": "python -m pytest tests/test_kernelspec.py tests/test_jsonutil.py tests/test_connect.py -x -q --cov=tornado --cov-report=term-missing",
+      "notes": "Tests don't require a running kernel. Tornado coverage ~3%. Distinctive usage: only uses tornado's async primitives (tornado.gen, tornado.locks, tornado.queues, tornado.concurrent) and the asyncio event-loop bridge (tornado.platform.asyncio); does not use the web framework, HTTP server, TCP server, or WebSocket layer at all. Tornado is accessed entirely through jupyter_client's kernel protocol."
     },
     {
       "name": "panel",
@@ -87,8 +87,8 @@
       "subdir": ".",
       "install_method": "pypi",
       "pypi_spec": "panel==1.5.3 pytest pytest-asyncio",
-      "test_cmd": "python -m pytest -o addopts= panel/tests/test_util.py -x -q",
-      "notes": "Installing the published wheel because the source build runs a full npm/bokeh bundling step. Tests are still run from the checkout."
+      "test_cmd": "python -m pytest -o addopts= panel/tests/test_util.py panel/tests/io/test_state.py panel/tests/io/test_document.py panel/tests/io/test_location.py panel/tests/io/test_notebook.py panel/tests/io/test_reload.py -q --cov=tornado --cov-report=term-missing",
+      "notes": "Installing the published wheel because the source build runs a full npm/bokeh bundling step. Tests are still run from the checkout. Tornado coverage ~14%. Uses tornado.wsgi for WSGI middleware integration (the only package in this set that exercises tornado.wsgi), tornado.websocket for live push updates to the browser, and inherits the Bokeh server's tornado.queues and tornado.locks usage."
     },
     {
       "name": "voila",
@@ -98,8 +98,8 @@
       "subdir": ".",
       "install_method": "pypi",
       "pypi_spec": "voila==0.5.8 pytest",
-      "test_cmd": "python -m pytest -o addopts= tests/utils_test.py -x -q",
-      "notes": "Source build tries to fetch bundled CSS from a URL that 403s in sandboxed envs; install the published wheel and run the test files from the checkout."
+      "test_cmd": "python -m pytest -o addopts= tests/utils_test.py -x -q --cov=tornado --cov-report=term-missing",
+      "notes": "Source build tries to fetch bundled CSS from a URL that 403s in sandboxed envs; install the published wheel and run the test files from the checkout. Server-integration tests require pytest-jupyter fixtures not auto-registered in this setup. Tornado coverage ~9%. Uses tornado.template heavily for converting notebook cells to HTML output (49% coverage, second-highest template usage after flower), and tornado.websocket for kernel communication. Does not use tornado.auth, tornado.options, or tornado.wsgi."
     }
   ]
 }
