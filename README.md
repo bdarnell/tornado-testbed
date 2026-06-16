@@ -57,6 +57,29 @@ TORNADO_SPEC="/path/to/tornado-7.0.0.dev0-py3-none-any.whl" ./scripts/run_all.sh
 wheel, a VCS URL, etc.), so pointing the harness at a pre-release build is
 one env var away.
 
+## Running in CI / GitHub Actions
+
+`scripts/ci.sh` is the single entry point for automated runs. It chains
+`setup.sh` → `run_all.sh` → `gen_reports.sh`, then prints a markdown summary to
+stdout and `$GITHUB_STEP_SUMMARY` and exposes `total`/`passed`/`failed` via
+`$GITHUB_OUTPUT`. Unlike a local run it commits nothing — results are meant to
+be read from the build log and downloaded from the uploaded `logs/`,
+`results/`, and `coverage_html/` artifacts.
+
+```bash
+TORNADO_SPEC="git+https://github.com/tornadoweb/tornado.git@my-branch" ./scripts/ci.sh
+ONLY="flower bokeh" ./scripts/ci.sh   # restrict to specific packages
+```
+
+Two thin workflows drive it:
+
+- `.github/workflows/testbed.yml` — this repo's self-test. Run it from the
+  Actions tab with a `tornado_ref` input to test against any Tornado
+  branch/tag/SHA.
+- `ci/tornado-downstream-testbed.yml` — a `workflow_dispatch` action meant to
+  live in the **tornado** repo; it runs this harness against the tornado branch
+  selected for the run. See `ci/README.md` for how to install it.
+
 ## Selection criteria
 
 The ten packages were picked to maximise ecosystem coverage: popular (by

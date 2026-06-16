@@ -1,0 +1,38 @@
+# Self-test workflow for tornado-testbed. Lets us exercise the harness in CI
+# (against a chosen Tornado branch/tag/SHA) without touching the tornado repo.
+# All real logic lives in scripts/ci.sh — keep this file thin.
+name: testbed
+
+on:
+  workflow_dispatch:
+    inputs:
+      tornado_ref:
+        description: "Tornado branch / tag / SHA to test against"
+        required: false
+        default: "master"
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Run testbed
+        id: testbed
+        env:
+          TORNADO_SPEC: "git+https://github.com/tornadoweb/tornado.git@${{ inputs.tornado_ref }}"
+        run: ./scripts/ci.sh
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: testbed-results
+          path: |
+            logs/
+            results/
+            coverage_html/
+          if-no-files-found: warn

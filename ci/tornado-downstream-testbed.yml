@@ -1,0 +1,54 @@
+# workflow_dispatch action intended to live in the tornadoweb/tornado repo as
+# .github/workflows/downstream-testbed.yml (see ci/README.md for install steps).
+#
+# Run it from the Actions tab, picking the tornado branch to test in the "Use
+# workflow from" dropdown. It checks out tornado-testbed (main by default),
+# installs *this* tornado checkout into each downstream package's env, runs
+# their test suites, and publishes the results as build output + artifacts.
+# Nothing is committed back to either repo.
+name: downstream-testbed
+
+on:
+  workflow_dispatch:
+    inputs:
+      testbed_ref:
+        description: "tornado-testbed branch/tag/SHA to run"
+        required: false
+        default: "main"
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout tornado (branch selected for this run)
+        uses: actions/checkout@v4
+        with:
+          path: tornado
+
+      - name: Checkout tornado-testbed
+        uses: actions/checkout@v4
+        with:
+          repository: bdarnell/tornado-testbed
+          ref: ${{ inputs.testbed_ref }}
+          path: tornado-testbed
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Run testbed against this tornado checkout
+        working-directory: tornado-testbed
+        env:
+          # Install the exact tornado source this workflow was launched against.
+          TORNADO_SPEC: "${{ github.workspace }}/tornado"
+        run: ./scripts/ci.sh
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: testbed-results
+          path: |
+            tornado-testbed/logs/
+            tornado-testbed/results/
+            tornado-testbed/coverage_html/
+          if-no-files-found: warn
