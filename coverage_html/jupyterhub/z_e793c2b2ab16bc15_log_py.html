@@ -2,17 +2,17 @@
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Coverage for packages/jupyterhub/.venv/lib/python3.11/site-packages/tornado/log.py: 31%</title>
+    <title>Coverage for packages/jupyterhub/.venv/lib/python3.11/site-packages/tornado/log.py: 38%</title>
     <link rel="icon" sizes="32x32" href="favicon_32_cb_c827f16f.png">
-    <link rel="stylesheet" href="style_cb_9ff733b0.css" type="text/css">
+    <link rel="stylesheet" href="style_cb_4667309f.css" type="text/css">
     <script src="coverage_html_cb_dd2e7eb5.js" defer></script>
 </head>
 <body class="pyfile">
 <header>
     <div class="content">
         <h1>
-            <span class="text">Coverage for </span><b>packages&#8201;/&#8201;jupyterhub&#8201;/&#8201;.venv&#8201;/&#8201;lib&#8201;/&#8201;python3.11&#8201;/&#8201;site-packages&#8201;/&#8201;tornado&#8201;/&#8201;log.py</b>:
-            <span class="pc_cov">31%</span>
+            <span class="text">Coverage for </span><b>packages<span class="sep">/</span>jupyterhub<span class="sep">/</span>.venv<span class="sep">/</span>lib<span class="sep">/</span>python3.11<span class="sep">/</span>site-packages<span class="sep">/</span>tornado<span class="sep">/</span>log.py</b>:
+            <span class="pc_cov">38%</span>
         </h1>
         <aside id="help_panel_wrapper">
             <input id="help_panel_state" type="checkbox">
@@ -55,8 +55,8 @@
         </aside>
         <h2>
             <span class="text">113 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">35<span class="text"> run</span></button>
-            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">78<span class="text"> missing</span></button>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">43<span class="text"> run</span></button>
+            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">70<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">0<span class="text"> excluded</span></button>
         </h2>
         <p class="text">
@@ -64,8 +64,8 @@
             <a id="indexLink" class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
             <a id="nextFileLink" class="nav" href="z_e793c2b2ab16bc15_netutil_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-17 21:52 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.14.1">coverage.py v7.14.1</a>,
+            created at 2026-06-16 06:12 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -135,8 +135,8 @@
     <p class="pln"><span class="n"><a id="t53" href="#t53">53</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t54" href="#t54">54</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t55" href="#t55">55</a></span><span class="t"><span class="key">def</span> <span class="nam">_stderr_supports_color</span><span class="op">(</span><span class="op">)</span> <span class="op">-></span> <span class="nam">bool</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t56" href="#t56">56</a></span><span class="t">    <span class="key">try</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t57" href="#t57">57</a></span><span class="t">        <span class="key">if</span> <span class="nam">hasattr</span><span class="op">(</span><span class="nam">sys</span><span class="op">.</span><span class="nam">stderr</span><span class="op">,</span> <span class="str">"isatty"</span><span class="op">)</span> <span class="key">and</span> <span class="nam">sys</span><span class="op">.</span><span class="nam">stderr</span><span class="op">.</span><span class="nam">isatty</span><span class="op">(</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t56" href="#t56">56</a></span><span class="t">    <span class="key">try</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t57" href="#t57">57</a></span><span class="t">        <span class="key">if</span> <span class="nam">hasattr</span><span class="op">(</span><span class="nam">sys</span><span class="op">.</span><span class="nam">stderr</span><span class="op">,</span> <span class="str">"isatty"</span><span class="op">)</span> <span class="key">and</span> <span class="nam">sys</span><span class="op">.</span><span class="nam">stderr</span><span class="op">.</span><span class="nam">isatty</span><span class="op">(</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t58" href="#t58">58</a></span><span class="t">            <span class="key">if</span> <span class="nam">curses</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t59" href="#t59">59</a></span><span class="t">                <span class="nam">curses</span><span class="op">.</span><span class="nam">setupterm</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t60" href="#t60">60</a></span><span class="t">                <span class="key">if</span> <span class="nam">curses</span><span class="op">.</span><span class="nam">tigetnum</span><span class="op">(</span><span class="str">"colors"</span><span class="op">)</span> <span class="op">></span> <span class="num">0</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -150,7 +150,7 @@
     <p class="pln"><span class="n"><a id="t68" href="#t68">68</a></span><span class="t">        <span class="com"># Very broad exception handling because it's always better to</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t69" href="#t69">69</a></span><span class="t">        <span class="com"># fall back to non-colored logs than to break at startup.</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t70" href="#t70">70</a></span><span class="t">        <span class="key">pass</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t71" href="#t71">71</a></span><span class="t">    <span class="key">return</span> <span class="key">False</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t71" href="#t71">71</a></span><span class="t">    <span class="key">return</span> <span class="key">False</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t72" href="#t72">72</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t73" href="#t73">73</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t74" href="#t74">74</a></span><span class="t"><span class="key">def</span> <span class="nam">_safe_unicode</span><span class="op">(</span><span class="nam">s</span><span class="op">:</span> <span class="nam">Any</span><span class="op">)</span> <span class="op">-></span> <span class="nam">str</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -218,11 +218,11 @@
     <p class="pln"><span class="n"><a id="t136" href="#t136">136</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t137" href="#t137">137</a></span><span class="t"><span class="str">           Added ``fmt`` and ``datefmt`` arguments.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t138" href="#t138">138</a></span><span class="t"><span class="str">        """</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t139" href="#t139">139</a></span><span class="t">        <span class="nam">logging</span><span class="op">.</span><span class="nam">Formatter</span><span class="op">.</span><span class="nam">__init__</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="nam">datefmt</span><span class="op">=</span><span class="nam">datefmt</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t140" href="#t140">140</a></span><span class="t">        <span class="nam">self</span><span class="op">.</span><span class="nam">_fmt</span> <span class="op">=</span> <span class="nam">fmt</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t139" href="#t139">139</a></span><span class="t">        <span class="nam">logging</span><span class="op">.</span><span class="nam">Formatter</span><span class="op">.</span><span class="nam">__init__</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="nam">datefmt</span><span class="op">=</span><span class="nam">datefmt</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t140" href="#t140">140</a></span><span class="t">        <span class="nam">self</span><span class="op">.</span><span class="nam">_fmt</span> <span class="op">=</span> <span class="nam">fmt</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t141" href="#t141">141</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t142" href="#t142">142</a></span><span class="t">        <span class="nam">self</span><span class="op">.</span><span class="nam">_colors</span> <span class="op">=</span> <span class="op">{</span><span class="op">}</span>  <span class="com"># type: Dict[int, str]</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t143" href="#t143">143</a></span><span class="t">        <span class="key">if</span> <span class="nam">color</span> <span class="key">and</span> <span class="nam">_stderr_supports_color</span><span class="op">(</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t142" href="#t142">142</a></span><span class="t">        <span class="nam">self</span><span class="op">.</span><span class="nam">_colors</span> <span class="op">=</span> <span class="op">{</span><span class="op">}</span>  <span class="com"># type: Dict[int, str]</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t143" href="#t143">143</a></span><span class="t">        <span class="key">if</span> <span class="nam">color</span> <span class="key">and</span> <span class="nam">_stderr_supports_color</span><span class="op">(</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t144" href="#t144">144</a></span><span class="t">            <span class="key">if</span> <span class="nam">curses</span> <span class="key">is</span> <span class="key">not</span> <span class="key">None</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t145" href="#t145">145</a></span><span class="t">                <span class="nam">fg_color</span> <span class="op">=</span> <span class="nam">curses</span><span class="op">.</span><span class="nam">tigetstr</span><span class="op">(</span><span class="str">"setaf"</span><span class="op">)</span> <span class="key">or</span> <span class="nam">curses</span><span class="op">.</span><span class="nam">tigetstr</span><span class="op">(</span><span class="str">"setf"</span><span class="op">)</span> <span class="key">or</span> <span class="str">b""</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t146" href="#t146">146</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -245,7 +245,7 @@
     <p class="mis show_mis"><span class="n"><a id="t163" href="#t163">163</a></span><span class="t">                    <span class="nam">self</span><span class="op">.</span><span class="nam">_colors</span><span class="op">[</span><span class="nam">levelno</span><span class="op">]</span> <span class="op">=</span> <span class="str">"\033[2;3%dm"</span> <span class="op">%</span> <span class="nam">code</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t164" href="#t164">164</a></span><span class="t">                <span class="nam">self</span><span class="op">.</span><span class="nam">_normal</span> <span class="op">=</span> <span class="str">"\033[0m"</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t165" href="#t165">165</a></span><span class="t">        <span class="key">else</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t166" href="#t166">166</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">_normal</span> <span class="op">=</span> <span class="str">""</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t166" href="#t166">166</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">_normal</span> <span class="op">=</span> <span class="str">""</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t167" href="#t167">167</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t168" href="#t168">168</a></span><span class="t">    <span class="key">def</span> <span class="nam">format</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="nam">record</span><span class="op">:</span> <span class="nam">Any</span><span class="op">)</span> <span class="op">-></span> <span class="nam">str</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t169" href="#t169">169</a></span><span class="t">        <span class="key">try</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -431,8 +431,8 @@
             <a class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
             <a class="nav" href="z_e793c2b2ab16bc15_netutil_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-17 21:52 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.14.1">coverage.py v7.14.1</a>,
+            created at 2026-06-16 06:12 +0000
         </p>
     </div>
 </footer>

@@ -2,17 +2,17 @@
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Coverage for packages/streamlit/.venv/lib/python3.11/site-packages/tornado/iostream.py: 60%</title>
+    <title>Coverage for packages/streamlit/.venv/lib/python3.11/site-packages/tornado/iostream.py: 62%</title>
     <link rel="icon" sizes="32x32" href="favicon_32_cb_c827f16f.png">
-    <link rel="stylesheet" href="style_cb_9ff733b0.css" type="text/css">
+    <link rel="stylesheet" href="style_cb_4667309f.css" type="text/css">
     <script src="coverage_html_cb_dd2e7eb5.js" defer></script>
 </head>
 <body class="pyfile">
 <header>
     <div class="content">
         <h1>
-            <span class="text">Coverage for </span><b>packages&#8201;/&#8201;streamlit&#8201;/&#8201;.venv&#8201;/&#8201;lib&#8201;/&#8201;python3.11&#8201;/&#8201;site-packages&#8201;/&#8201;tornado&#8201;/&#8201;iostream.py</b>:
-            <span class="pc_cov">60%</span>
+            <span class="text">Coverage for </span><b>packages<span class="sep">/</span>streamlit<span class="sep">/</span>.venv<span class="sep">/</span>lib<span class="sep">/</span>python3.11<span class="sep">/</span>site-packages<span class="sep">/</span>tornado<span class="sep">/</span>iostream.py</b>:
+            <span class="pc_cov">62%</span>
         </h1>
         <aside id="help_panel_wrapper">
             <input id="help_panel_state" type="checkbox">
@@ -55,8 +55,8 @@
         </aside>
         <h2>
             <span class="text">720 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">433<span class="text"> run</span></button>
-            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">287<span class="text"> missing</span></button>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">448<span class="text"> run</span></button>
+            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">272<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">2<span class="text"> excluded</span></button>
         </h2>
         <p class="text">
@@ -64,8 +64,8 @@
             <a id="indexLink" class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
             <a id="nextFileLink" class="nav" href="z_c548ff07a57a8640_locale_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-17 21:52 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.14.1">coverage.py v7.14.1</a>,
+            created at 2026-06-16 06:13 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -229,14 +229,14 @@
     <p class="run"><span class="n"><a id="t147" href="#t147">147</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">_buffers</span><span class="op">.</span><span class="nam">append</span><span class="op">(</span><span class="op">(</span><span class="key">True</span><span class="op">,</span> <span class="nam">data</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t148" href="#t148">148</a></span><span class="t">        <span class="key">elif</span> <span class="nam">size</span> <span class="op">></span> <span class="num">0</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t149" href="#t149">149</a></span><span class="t">            <span class="key">if</span> <span class="nam">self</span><span class="op">.</span><span class="nam">_buffers</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t150" href="#t150">150</a></span><span class="t">                <span class="nam">is_memview</span><span class="op">,</span> <span class="nam">b</span> <span class="op">=</span> <span class="nam">self</span><span class="op">.</span><span class="nam">_buffers</span><span class="op">[</span><span class="op">-</span><span class="num">1</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t151" href="#t151">151</a></span><span class="t">                <span class="nam">new_buf</span> <span class="op">=</span> <span class="nam">is_memview</span> <span class="key">or</span> <span class="nam">len</span><span class="op">(</span><span class="nam">b</span><span class="op">)</span> <span class="op">>=</span> <span class="nam">self</span><span class="op">.</span><span class="nam">_large_buf_threshold</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t150" href="#t150">150</a></span><span class="t">                <span class="nam">is_memview</span><span class="op">,</span> <span class="nam">b</span> <span class="op">=</span> <span class="nam">self</span><span class="op">.</span><span class="nam">_buffers</span><span class="op">[</span><span class="op">-</span><span class="num">1</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t151" href="#t151">151</a></span><span class="t">                <span class="nam">new_buf</span> <span class="op">=</span> <span class="nam">is_memview</span> <span class="key">or</span> <span class="nam">len</span><span class="op">(</span><span class="nam">b</span><span class="op">)</span> <span class="op">>=</span> <span class="nam">self</span><span class="op">.</span><span class="nam">_large_buf_threshold</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t152" href="#t152">152</a></span><span class="t">            <span class="key">else</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t153" href="#t153">153</a></span><span class="t">                <span class="nam">new_buf</span> <span class="op">=</span> <span class="key">True</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t154" href="#t154">154</a></span><span class="t">            <span class="key">if</span> <span class="nam">new_buf</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t155" href="#t155">155</a></span><span class="t">                <span class="nam">self</span><span class="op">.</span><span class="nam">_buffers</span><span class="op">.</span><span class="nam">append</span><span class="op">(</span><span class="op">(</span><span class="key">False</span><span class="op">,</span> <span class="nam">bytearray</span><span class="op">(</span><span class="nam">data</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t156" href="#t156">156</a></span><span class="t">            <span class="key">else</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t157" href="#t157">157</a></span><span class="t">                <span class="nam">b</span> <span class="op">+=</span> <span class="nam">data</span>  <span class="com"># type: ignore</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t157" href="#t157">157</a></span><span class="t">                <span class="nam">b</span> <span class="op">+=</span> <span class="nam">data</span>  <span class="com"># type: ignore</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t158" href="#t158">158</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t159" href="#t159">159</a></span><span class="t">        <span class="nam">self</span><span class="op">.</span><span class="nam">_size</span> <span class="op">+=</span> <span class="nam">size</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t160" href="#t160">160</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -464,11 +464,11 @@
     <p class="pln"><span class="n"><a id="t382" href="#t382">382</a></span><span class="t"><span class="str">           The ``callback`` argument was removed. Use the returned</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t383" href="#t383">383</a></span><span class="t"><span class="str">           `.Future` instead.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t384" href="#t384">384</a></span><span class="t"><span class="str">        """</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t385" href="#t385">385</a></span><span class="t">        <span class="nam">future</span> <span class="op">=</span> <span class="nam">self</span><span class="op">.</span><span class="nam">_start_read</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t386" href="#t386">386</a></span><span class="t">        <span class="nam">self</span><span class="op">.</span><span class="nam">_read_delimiter</span> <span class="op">=</span> <span class="nam">delimiter</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t387" href="#t387">387</a></span><span class="t">        <span class="nam">self</span><span class="op">.</span><span class="nam">_read_max_bytes</span> <span class="op">=</span> <span class="nam">max_bytes</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t388" href="#t388">388</a></span><span class="t">        <span class="key">try</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t389" href="#t389">389</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">_try_inline_read</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t385" href="#t385">385</a></span><span class="t">        <span class="nam">future</span> <span class="op">=</span> <span class="nam">self</span><span class="op">.</span><span class="nam">_start_read</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t386" href="#t386">386</a></span><span class="t">        <span class="nam">self</span><span class="op">.</span><span class="nam">_read_delimiter</span> <span class="op">=</span> <span class="nam">delimiter</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t387" href="#t387">387</a></span><span class="t">        <span class="nam">self</span><span class="op">.</span><span class="nam">_read_max_bytes</span> <span class="op">=</span> <span class="nam">max_bytes</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t388" href="#t388">388</a></span><span class="t">        <span class="key">try</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t389" href="#t389">389</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">_try_inline_read</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t390" href="#t390">390</a></span><span class="t">        <span class="key">except</span> <span class="nam">UnsatisfiableReadError</span> <span class="key">as</span> <span class="nam">e</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t391" href="#t391">391</a></span><span class="t">            <span class="com"># Handle this the same way as in _handle_events.</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t392" href="#t392">392</a></span><span class="t">            <span class="nam">gen_log</span><span class="op">.</span><span class="nam">info</span><span class="op">(</span><span class="str">"Unsatisfiable read, closing connection: %s"</span> <span class="op">%</span> <span class="nam">e</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -477,7 +477,7 @@
     <p class="mis show_mis"><span class="n"><a id="t395" href="#t395">395</a></span><span class="t">        <span class="key">except</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t396" href="#t396">396</a></span><span class="t">            <span class="nam">future</span><span class="op">.</span><span class="nam">add_done_callback</span><span class="op">(</span><span class="key">lambda</span> <span class="nam">f</span><span class="op">:</span> <span class="nam">f</span><span class="op">.</span><span class="nam">exception</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t397" href="#t397">397</a></span><span class="t">            <span class="key">raise</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t398" href="#t398">398</a></span><span class="t">        <span class="key">return</span> <span class="nam">future</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t398" href="#t398">398</a></span><span class="t">        <span class="key">return</span> <span class="nam">future</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t399" href="#t399">399</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t400" href="#t400">400</a></span><span class="t">    <span class="key">def</span> <span class="nam">read_bytes</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="nam">num_bytes</span><span class="op">:</span> <span class="nam">int</span><span class="op">,</span> <span class="nam">partial</span><span class="op">:</span> <span class="nam">bool</span> <span class="op">=</span> <span class="key">False</span><span class="op">)</span> <span class="op">-></span> <span class="nam">Awaitable</span><span class="op">[</span><span class="nam">bytes</span><span class="op">]</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t401" href="#t401">401</a></span><span class="t">        <span class="str">"""Asynchronously read a number of bytes.</span>&nbsp;</span><span class="r"></span></p>
@@ -1002,12 +1002,12 @@
     <p class="pln"><span class="n"><a id="t920" href="#t920">920</a></span><span class="t">            <span class="com"># to be in the first few chunks.  Merge the buffer gradually</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t921" href="#t921">921</a></span><span class="t">            <span class="com"># since large merges are relatively expensive and get undone in</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t922" href="#t922">922</a></span><span class="t">            <span class="com"># _consume().</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t923" href="#t923">923</a></span><span class="t">            <span class="key">if</span> <span class="nam">self</span><span class="op">.</span><span class="nam">_read_buffer</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t924" href="#t924">924</a></span><span class="t">                <span class="nam">loc</span> <span class="op">=</span> <span class="nam">self</span><span class="op">.</span><span class="nam">_read_buffer</span><span class="op">.</span><span class="nam">find</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">_read_delimiter</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t925" href="#t925">925</a></span><span class="t">                <span class="key">if</span> <span class="nam">loc</span> <span class="op">!=</span> <span class="op">-</span><span class="num">1</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t926" href="#t926">926</a></span><span class="t">                    <span class="nam">delimiter_len</span> <span class="op">=</span> <span class="nam">len</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">_read_delimiter</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t927" href="#t927">927</a></span><span class="t">                    <span class="nam">self</span><span class="op">.</span><span class="nam">_check_max_bytes</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">_read_delimiter</span><span class="op">,</span> <span class="nam">loc</span> <span class="op">+</span> <span class="nam">delimiter_len</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t928" href="#t928">928</a></span><span class="t">                    <span class="key">return</span> <span class="nam">loc</span> <span class="op">+</span> <span class="nam">delimiter_len</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t923" href="#t923">923</a></span><span class="t">            <span class="key">if</span> <span class="nam">self</span><span class="op">.</span><span class="nam">_read_buffer</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t924" href="#t924">924</a></span><span class="t">                <span class="nam">loc</span> <span class="op">=</span> <span class="nam">self</span><span class="op">.</span><span class="nam">_read_buffer</span><span class="op">.</span><span class="nam">find</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">_read_delimiter</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t925" href="#t925">925</a></span><span class="t">                <span class="key">if</span> <span class="nam">loc</span> <span class="op">!=</span> <span class="op">-</span><span class="num">1</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t926" href="#t926">926</a></span><span class="t">                    <span class="nam">delimiter_len</span> <span class="op">=</span> <span class="nam">len</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">_read_delimiter</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t927" href="#t927">927</a></span><span class="t">                    <span class="nam">self</span><span class="op">.</span><span class="nam">_check_max_bytes</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">_read_delimiter</span><span class="op">,</span> <span class="nam">loc</span> <span class="op">+</span> <span class="nam">delimiter_len</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t928" href="#t928">928</a></span><span class="t">                    <span class="key">return</span> <span class="nam">loc</span> <span class="op">+</span> <span class="nam">delimiter_len</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t929" href="#t929">929</a></span><span class="t">                <span class="nam">self</span><span class="op">.</span><span class="nam">_check_max_bytes</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">_read_delimiter</span><span class="op">,</span> <span class="nam">self</span><span class="op">.</span><span class="nam">_read_buffer_size</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t930" href="#t930">930</a></span><span class="t">        <span class="key">elif</span> <span class="nam">self</span><span class="op">.</span><span class="nam">_read_regex</span> <span class="key">is</span> <span class="key">not</span> <span class="key">None</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t931" href="#t931">931</a></span><span class="t">            <span class="key">if</span> <span class="nam">self</span><span class="op">.</span><span class="nam">_read_buffer</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -1705,8 +1705,8 @@
             <a class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
             <a class="nav" href="z_c548ff07a57a8640_locale_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-17 21:52 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.14.1">coverage.py v7.14.1</a>,
+            created at 2026-06-16 06:13 +0000
         </p>
     </div>
 </footer>

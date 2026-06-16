@@ -2,17 +2,17 @@
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Coverage for packages/bokeh/.venv/lib/python3.11/site-packages/tornado/ioloop.py: 55%</title>
+    <title>Coverage for packages/bokeh/.venv/lib/python3.11/site-packages/tornado/ioloop.py: 56%</title>
     <link rel="icon" sizes="32x32" href="favicon_32_cb_c827f16f.png">
-    <link rel="stylesheet" href="style_cb_9ff733b0.css" type="text/css">
+    <link rel="stylesheet" href="style_cb_4667309f.css" type="text/css">
     <script src="coverage_html_cb_dd2e7eb5.js" defer></script>
 </head>
 <body class="pyfile">
 <header>
     <div class="content">
         <h1>
-            <span class="text">Coverage for </span><b>packages&#8201;/&#8201;bokeh&#8201;/&#8201;.venv&#8201;/&#8201;lib&#8201;/&#8201;python3.11&#8201;/&#8201;site-packages&#8201;/&#8201;tornado&#8201;/&#8201;ioloop.py</b>:
-            <span class="pc_cov">55%</span>
+            <span class="text">Coverage for </span><b>packages<span class="sep">/</span>bokeh<span class="sep">/</span>.venv<span class="sep">/</span>lib<span class="sep">/</span>python3.11<span class="sep">/</span>site-packages<span class="sep">/</span>tornado<span class="sep">/</span>ioloop.py</b>:
+            <span class="pc_cov">56%</span>
         </h1>
         <aside id="help_panel_wrapper">
             <input id="help_panel_state" type="checkbox">
@@ -55,8 +55,8 @@
         </aside>
         <h2>
             <span class="text">277 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">151<span class="text"> run</span></button>
-            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">126<span class="text"> missing</span></button>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">155<span class="text"> run</span></button>
+            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">122<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">5<span class="text"> excluded</span></button>
         </h2>
         <p class="text">
@@ -64,8 +64,8 @@
             <a id="indexLink" class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
             <a id="nextFileLink" class="nav" href="z_20a1f7d97d7157e8_iostream_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-17 21:52 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.14.1">coverage.py v7.14.1</a>,
+            created at 2026-06-16 06:12 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -351,12 +351,12 @@
     <p class="pln"><span class="n"><a id="t269" href="#t269">269</a></span><span class="t"><span class="str">        """</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t270" href="#t270">270</a></span><span class="t">        <span class="key">try</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t271" href="#t271">271</a></span><span class="t">            <span class="nam">loop</span> <span class="op">=</span> <span class="nam">asyncio</span><span class="op">.</span><span class="nam">get_event_loop</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t272" href="#t272">272</a></span><span class="t">        <span class="key">except</span> <span class="nam">RuntimeError</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t273" href="#t273">273</a></span><span class="t">            <span class="key">if</span> <span class="key">not</span> <span class="nam">instance</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t272" href="#t272">272</a></span><span class="t">        <span class="key">except</span> <span class="nam">RuntimeError</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t273" href="#t273">273</a></span><span class="t">            <span class="key">if</span> <span class="key">not</span> <span class="nam">instance</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t274" href="#t274">274</a></span><span class="t">                <span class="key">return</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t275" href="#t275">275</a></span><span class="t">            <span class="com"># Create a new asyncio event loop for this thread.</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t276" href="#t276">276</a></span><span class="t">            <span class="nam">loop</span> <span class="op">=</span> <span class="nam">asyncio</span><span class="op">.</span><span class="nam">new_event_loop</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t277" href="#t277">277</a></span><span class="t">            <span class="nam">asyncio</span><span class="op">.</span><span class="nam">set_event_loop</span><span class="op">(</span><span class="nam">loop</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t276" href="#t276">276</a></span><span class="t">            <span class="nam">loop</span> <span class="op">=</span> <span class="nam">asyncio</span><span class="op">.</span><span class="nam">new_event_loop</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t277" href="#t277">277</a></span><span class="t">            <span class="nam">asyncio</span><span class="op">.</span><span class="nam">set_event_loop</span><span class="op">(</span><span class="nam">loop</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t278" href="#t278">278</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t279" href="#t279">279</a></span><span class="t">        <span class="key">try</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t280" href="#t280">280</a></span><span class="t">            <span class="key">return</span> <span class="nam">IOLoop</span><span class="op">.</span><span class="nam">_ioloop_for_asyncio</span><span class="op">[</span><span class="nam">loop</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
@@ -1074,8 +1074,8 @@
             <a class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
             <a class="nav" href="z_20a1f7d97d7157e8_iostream_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-17 21:52 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.14.1">coverage.py v7.14.1</a>,
+            created at 2026-06-16 06:12 +0000
         </p>
     </div>
 </footer>

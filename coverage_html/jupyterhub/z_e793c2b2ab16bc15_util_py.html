@@ -2,17 +2,17 @@
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Coverage for packages/jupyterhub/.venv/lib/python3.11/site-packages/tornado/util.py: 42%</title>
+    <title>Coverage for packages/jupyterhub/.venv/lib/python3.11/site-packages/tornado/util.py: 51%</title>
     <link rel="icon" sizes="32x32" href="favicon_32_cb_c827f16f.png">
-    <link rel="stylesheet" href="style_cb_9ff733b0.css" type="text/css">
+    <link rel="stylesheet" href="style_cb_4667309f.css" type="text/css">
     <script src="coverage_html_cb_dd2e7eb5.js" defer></script>
 </head>
 <body class="pyfile">
 <header>
     <div class="content">
         <h1>
-            <span class="text">Coverage for </span><b>packages&#8201;/&#8201;jupyterhub&#8201;/&#8201;.venv&#8201;/&#8201;lib&#8201;/&#8201;python3.11&#8201;/&#8201;site-packages&#8201;/&#8201;tornado&#8201;/&#8201;util.py</b>:
-            <span class="pc_cov">42%</span>
+            <span class="text">Coverage for </span><b>packages<span class="sep">/</span>jupyterhub<span class="sep">/</span>.venv<span class="sep">/</span>lib<span class="sep">/</span>python3.11<span class="sep">/</span>site-packages<span class="sep">/</span>tornado<span class="sep">/</span>util.py</b>:
+            <span class="pc_cov">51%</span>
         </h1>
         <aside id="help_panel_wrapper">
             <input id="help_panel_state" type="checkbox">
@@ -55,8 +55,8 @@
         </aside>
         <h2>
             <span class="text">163 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">68<span class="text"> run</span></button>
-            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">95<span class="text"> missing</span></button>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">83<span class="text"> run</span></button>
+            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">80<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">6<span class="text"> excluded</span></button>
         </h2>
         <p class="text">
@@ -64,8 +64,8 @@
             <a id="indexLink" class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
             <a id="nextFileLink" class="nav" href="z_e793c2b2ab16bc15_web_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-17 21:52 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.14.1">coverage.py v7.14.1</a>,
+            created at 2026-06-16 06:12 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -205,11 +205,11 @@
     <p class="exc exc2 show_exc"><span class="n"><a id="t123" href="#t123">123</a></span><span class="t"><span class="str">        ...</span>&nbsp;</span><span class="r"></span></p>
     <p class="exc exc2 show_exc"><span class="n"><a id="t124" href="#t124">124</a></span><span class="t"><span class="str">    ImportError: No module named missing_module</span>&nbsp;</span><span class="r"></span></p>
     <p class="exc exc2 show_exc"><span class="n"><a id="t125" href="#t125">125</a></span><span class="t"><span class="str">    """</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t126" href="#t126">126</a></span><span class="t">    <span class="key">if</span> <span class="nam">name</span><span class="op">.</span><span class="nam">count</span><span class="op">(</span><span class="str">"."</span><span class="op">)</span> <span class="op">==</span> <span class="num">0</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t126" href="#t126">126</a></span><span class="t">    <span class="key">if</span> <span class="nam">name</span><span class="op">.</span><span class="nam">count</span><span class="op">(</span><span class="str">"."</span><span class="op">)</span> <span class="op">==</span> <span class="num">0</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t127" href="#t127">127</a></span><span class="t">        <span class="key">return</span> <span class="nam">__import__</span><span class="op">(</span><span class="nam">name</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t128" href="#t128">128</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t129" href="#t129">129</a></span><span class="t">    <span class="nam">parts</span> <span class="op">=</span> <span class="nam">name</span><span class="op">.</span><span class="nam">split</span><span class="op">(</span><span class="str">"."</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t130" href="#t130">130</a></span><span class="t">    <span class="nam">obj</span> <span class="op">=</span> <span class="nam">__import__</span><span class="op">(</span><span class="str">"."</span><span class="op">.</span><span class="nam">join</span><span class="op">(</span><span class="nam">parts</span><span class="op">[</span><span class="op">:</span><span class="op">-</span><span class="num">1</span><span class="op">]</span><span class="op">)</span><span class="op">,</span> <span class="nam">fromlist</span><span class="op">=</span><span class="op">[</span><span class="nam">parts</span><span class="op">[</span><span class="op">-</span><span class="num">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t129" href="#t129">129</a></span><span class="t">    <span class="nam">parts</span> <span class="op">=</span> <span class="nam">name</span><span class="op">.</span><span class="nam">split</span><span class="op">(</span><span class="str">"."</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t130" href="#t130">130</a></span><span class="t">    <span class="nam">obj</span> <span class="op">=</span> <span class="nam">__import__</span><span class="op">(</span><span class="str">"."</span><span class="op">.</span><span class="nam">join</span><span class="op">(</span><span class="nam">parts</span><span class="op">[</span><span class="op">:</span><span class="op">-</span><span class="num">1</span><span class="op">]</span><span class="op">)</span><span class="op">,</span> <span class="nam">fromlist</span><span class="op">=</span><span class="op">[</span><span class="nam">parts</span><span class="op">[</span><span class="op">-</span><span class="num">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t131" href="#t131">131</a></span><span class="t">    <span class="key">try</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t132" href="#t132">132</a></span><span class="t">        <span class="key">return</span> <span class="nam">getattr</span><span class="op">(</span><span class="nam">obj</span><span class="op">,</span> <span class="nam">parts</span><span class="op">[</span><span class="op">-</span><span class="num">1</span><span class="op">]</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t133" href="#t133">133</a></span><span class="t">    <span class="key">except</span> <span class="nam">AttributeError</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -280,7 +280,7 @@
     <p class="pln"><span class="n"><a id="t198" href="#t198">198</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t199" href="#t199">199</a></span><span class="t"><span class="str">    .. versionadded:: 4.4</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t200" href="#t200">200</a></span><span class="t"><span class="str">    """</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t201" href="#t201">201</a></span><span class="t">    <span class="key">return</span> <span class="nam">_re_unescape_pattern</span><span class="op">.</span><span class="nam">sub</span><span class="op">(</span><span class="nam">_re_unescape_replacement</span><span class="op">,</span> <span class="nam">s</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t201" href="#t201">201</a></span><span class="t">    <span class="key">return</span> <span class="nam">_re_unescape_pattern</span><span class="op">.</span><span class="nam">sub</span><span class="op">(</span><span class="nam">_re_unescape_replacement</span><span class="op">,</span> <span class="nam">s</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t202" href="#t202">202</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t203" href="#t203">203</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t204" href="#t204">204</a></span><span class="t"><span class="key">class</span> <span class="nam">Configurable</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -325,8 +325,8 @@
     <p class="run"><span class="n"><a id="t243" href="#t243">243</a></span><span class="t">        <span class="nam">base</span> <span class="op">=</span> <span class="nam">cls</span><span class="op">.</span><span class="nam">configurable_base</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t244" href="#t244">244</a></span><span class="t">        <span class="nam">init_kwargs</span> <span class="op">=</span> <span class="op">{</span><span class="op">}</span>  <span class="com"># type: Dict[str, Any]</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t245" href="#t245">245</a></span><span class="t">        <span class="key">if</span> <span class="nam">cls</span> <span class="key">is</span> <span class="nam">base</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t246" href="#t246">246</a></span><span class="t">            <span class="nam">impl</span> <span class="op">=</span> <span class="nam">cls</span><span class="op">.</span><span class="nam">configured_class</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t247" href="#t247">247</a></span><span class="t">            <span class="key">if</span> <span class="nam">base</span><span class="op">.</span><span class="nam">__impl_kwargs</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t246" href="#t246">246</a></span><span class="t">            <span class="nam">impl</span> <span class="op">=</span> <span class="nam">cls</span><span class="op">.</span><span class="nam">configured_class</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t247" href="#t247">247</a></span><span class="t">            <span class="key">if</span> <span class="nam">base</span><span class="op">.</span><span class="nam">__impl_kwargs</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t248" href="#t248">248</a></span><span class="t">                <span class="nam">init_kwargs</span><span class="op">.</span><span class="nam">update</span><span class="op">(</span><span class="nam">base</span><span class="op">.</span><span class="nam">__impl_kwargs</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t249" href="#t249">249</a></span><span class="t">        <span class="key">else</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t250" href="#t250">250</a></span><span class="t">            <span class="nam">impl</span> <span class="op">=</span> <span class="nam">cls</span>&nbsp;</span><span class="r"></span></p>
@@ -360,7 +360,7 @@
     <p class="mis show_mis"><span class="n"><a id="t278" href="#t278">278</a></span><span class="t">        <span class="key">raise</span> <span class="nam">NotImplementedError</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t279" href="#t279">279</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t280" href="#t280">280</a></span><span class="t">    <span class="key">def</span> <span class="nam">_initialize</span><span class="op">(</span><span class="nam">self</span><span class="op">)</span> <span class="op">-></span> <span class="key">None</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t281" href="#t281">281</a></span><span class="t">        <span class="key">pass</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t281" href="#t281">281</a></span><span class="t">        <span class="key">pass</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t282" href="#t282">282</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t283" href="#t283">283</a></span><span class="t">    <span class="nam">initialize</span> <span class="op">=</span> <span class="nam">_initialize</span>  <span class="com"># type: Callable[..., None]</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t284" href="#t284">284</a></span><span class="t">    <span class="str">"""Initialize a `Configurable` subclass instance.</span>&nbsp;</span><span class="r"></span></p>
@@ -380,9 +380,9 @@
     <p class="pln"><span class="n"><a id="t298" href="#t298">298</a></span><span class="t"><span class="str">        to the constructor.  This can be used to set global defaults for</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t299" href="#t299">299</a></span><span class="t"><span class="str">        some parameters.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t300" href="#t300">300</a></span><span class="t"><span class="str">        """</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t301" href="#t301">301</a></span><span class="t">        <span class="nam">base</span> <span class="op">=</span> <span class="nam">cls</span><span class="op">.</span><span class="nam">configurable_base</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t302" href="#t302">302</a></span><span class="t">        <span class="key">if</span> <span class="nam">isinstance</span><span class="op">(</span><span class="nam">impl</span><span class="op">,</span> <span class="nam">str</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t303" href="#t303">303</a></span><span class="t">            <span class="nam">impl</span> <span class="op">=</span> <span class="nam">typing</span><span class="op">.</span><span class="nam">cast</span><span class="op">(</span><span class="nam">Type</span><span class="op">[</span><span class="nam">Configurable</span><span class="op">]</span><span class="op">,</span> <span class="nam">import_object</span><span class="op">(</span><span class="nam">impl</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t301" href="#t301">301</a></span><span class="t">        <span class="nam">base</span> <span class="op">=</span> <span class="nam">cls</span><span class="op">.</span><span class="nam">configurable_base</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t302" href="#t302">302</a></span><span class="t">        <span class="key">if</span> <span class="nam">isinstance</span><span class="op">(</span><span class="nam">impl</span><span class="op">,</span> <span class="nam">str</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t303" href="#t303">303</a></span><span class="t">            <span class="nam">impl</span> <span class="op">=</span> <span class="nam">typing</span><span class="op">.</span><span class="nam">cast</span><span class="op">(</span><span class="nam">Type</span><span class="op">[</span><span class="nam">Configurable</span><span class="op">]</span><span class="op">,</span> <span class="nam">import_object</span><span class="op">(</span><span class="nam">impl</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t304" href="#t304">304</a></span><span class="t">        <span class="key">if</span> <span class="nam">impl</span> <span class="key">is</span> <span class="key">not</span> <span class="key">None</span> <span class="key">and</span> <span class="key">not</span> <span class="nam">issubclass</span><span class="op">(</span><span class="nam">impl</span><span class="op">,</span> <span class="nam">cls</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t305" href="#t305">305</a></span><span class="t">            <span class="key">raise</span> <span class="nam">ValueError</span><span class="op">(</span><span class="str">"Invalid subclass of %s"</span> <span class="op">%</span> <span class="nam">cls</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t306" href="#t306">306</a></span><span class="t">        <span class="nam">base</span><span class="op">.</span><span class="nam">__impl_class</span> <span class="op">=</span> <span class="nam">impl</span>&nbsp;</span><span class="r"></span></p>
@@ -392,14 +392,14 @@
     <p class="run"><span class="n"><a id="t310" href="#t310">310</a></span><span class="t">    <span class="key">def</span> <span class="nam">configured_class</span><span class="op">(</span><span class="nam">cls</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t311" href="#t311">311</a></span><span class="t">        <span class="com"># type: () -> Type[Configurable]</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t312" href="#t312">312</a></span><span class="t">        <span class="str">"""Returns the currently configured class."""</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t313" href="#t313">313</a></span><span class="t">        <span class="nam">base</span> <span class="op">=</span> <span class="nam">cls</span><span class="op">.</span><span class="nam">configurable_base</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t313" href="#t313">313</a></span><span class="t">        <span class="nam">base</span> <span class="op">=</span> <span class="nam">cls</span><span class="op">.</span><span class="nam">configurable_base</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t314" href="#t314">314</a></span><span class="t">        <span class="com"># Manually mangle the private name to see whether this base</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t315" href="#t315">315</a></span><span class="t">        <span class="com"># has been configured (and not another base higher in the</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t316" href="#t316">316</a></span><span class="t">        <span class="com"># hierarchy).</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t317" href="#t317">317</a></span><span class="t">        <span class="key">if</span> <span class="nam">base</span><span class="op">.</span><span class="nam">__dict__</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"_Configurable__impl_class"</span><span class="op">)</span> <span class="key">is</span> <span class="key">None</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t318" href="#t318">318</a></span><span class="t">            <span class="nam">base</span><span class="op">.</span><span class="nam">__impl_class</span> <span class="op">=</span> <span class="nam">cls</span><span class="op">.</span><span class="nam">configurable_default</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t319" href="#t319">319</a></span><span class="t">        <span class="key">if</span> <span class="nam">base</span><span class="op">.</span><span class="nam">__impl_class</span> <span class="key">is</span> <span class="key">not</span> <span class="key">None</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t320" href="#t320">320</a></span><span class="t">            <span class="key">return</span> <span class="nam">base</span><span class="op">.</span><span class="nam">__impl_class</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t317" href="#t317">317</a></span><span class="t">        <span class="key">if</span> <span class="nam">base</span><span class="op">.</span><span class="nam">__dict__</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"_Configurable__impl_class"</span><span class="op">)</span> <span class="key">is</span> <span class="key">None</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t318" href="#t318">318</a></span><span class="t">            <span class="nam">base</span><span class="op">.</span><span class="nam">__impl_class</span> <span class="op">=</span> <span class="nam">cls</span><span class="op">.</span><span class="nam">configurable_default</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t319" href="#t319">319</a></span><span class="t">        <span class="key">if</span> <span class="nam">base</span><span class="op">.</span><span class="nam">__impl_class</span> <span class="key">is</span> <span class="key">not</span> <span class="key">None</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t320" href="#t320">320</a></span><span class="t">            <span class="key">return</span> <span class="nam">base</span><span class="op">.</span><span class="nam">__impl_class</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t321" href="#t321">321</a></span><span class="t">        <span class="key">else</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t322" href="#t322">322</a></span><span class="t">            <span class="com"># Should be impossible, but mypy wants an explicit check.</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t323" href="#t323">323</a></span><span class="t">            <span class="key">raise</span> <span class="nam">ValueError</span><span class="op">(</span><span class="str">"configured class not found"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -533,8 +533,8 @@
             <a class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
             <a class="nav" href="z_e793c2b2ab16bc15_web_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-17 21:52 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.14.1">coverage.py v7.14.1</a>,
+            created at 2026-06-16 06:12 +0000
         </p>
     </div>
 </footer>

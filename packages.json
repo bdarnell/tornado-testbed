@@ -31,8 +31,8 @@
       "ref": "v2.14.2",
       "reason": "Core backend for Jupyter Notebook / JupyterLab; Tornado is its HTTP engine.",
       "subdir": ".",
-      "test_cmd": "python -m pytest tests/test_utils.py tests/test_version.py tests/test_traittypes.py tests/test_serialize.py -x -q --cov=tornado --cov-report=term-missing",
-      "notes": "Pure-function tests that don't instantiate a live ServerApp. ServerApp-based tests hit an unrelated jupyter_events>=0.12 schema-version incompat when they load the built-in event schemas. Tornado coverage ~6% (only import-time paths exercised). Uses tornado.testing as its own test base class infrastructure, and tornado.websocket for kernel and terminal communication channels."
+      "test_cmd": "python -m pytest tests/ -q -p no:cacheprovider -W 'ignore::jupyter_events.utils.JupyterEventsVersionWarning' --deselect tests/extension/test_launch.py --deselect tests/test_serverapp.py::test_urls --deselect tests/test_serverapp.py::test_browser_open_files --cov-config=/dev/null --cov=tornado --cov-report=term-missing",
+      "notes": "Runs the FULL jupyter_server test suite against live Tornado servers via the pytest-jupyter fixtures (jp_serverapp/jp_fetch/jp_ws_fetch boot a real ServerApp on a real port). ~970 tests in ~4 min. Tornado coverage ~42% (websocket 69%, web 61%, iostream 58%, httpserver 59%) — up from ~6% when only pure-function tests ran. The jupyter_events>=0.12 schema-version incompat that previously blocked ServerApp tests is sidestepped with '-W ignore::...JupyterEventsVersionWarning' (jupyter_server v2.14.2 ships integer schema versions that newer jupyter_events warns on, then the project's filterwarnings=error promotes to a failure; unrelated to Tornado). Three deselects are jupyter_server's own order-dependent / subprocess-launch tests (pass in isolation, not Tornado regressions). Uses tornado.testing as its own test base class infrastructure, and tornado.websocket for kernel and terminal communication channels."
     },
     {
       "name": "notebook",
@@ -40,7 +40,7 @@
       "ref": "v7.2.2",
       "reason": "Classic Jupyter Notebook UI, ~11k stars; transitively pulls Tornado through jupyter_server.",
       "subdir": ".",
-      "test_cmd": "python -m pytest tests/test_app.py -x -q --cov=tornado --cov-report=term-missing",
+      "test_cmd": "python -m pytest tests/test_app.py -x -q --cov-config=/dev/null --cov=tornado --cov-report=term-missing",
       "notes": "Focused import / app startup tests; only has one test file. Tornado coverage ~10%. Uses tornado.template for rendering notebook HTML pages, and tornado.websocket for the notebook kernel communication channel."
     },
     {
@@ -49,8 +49,8 @@
       "ref": "5.2.1",
       "reason": "Multi-user Jupyter server, ~8k stars; Tornado-based.",
       "subdir": ".",
-      "test_cmd": "python -m pytest jupyterhub/tests/test_version.py jupyterhub/tests/test_utils.py -x -q --cov=tornado --cov-config=/dev/null --cov-report=term-missing",
-      "notes": "Full suite needs a JS build and a database; we run logic-only tests. --cov-config=/dev/null bypasses the project's .coveragerc which omits site-packages. Tornado coverage ~9%. Uses tornado.options for CLI/config parsing (uncommon among these packages), tornado.gen and tornado.concurrent heavily for OAuth and auth-provider coroutine flows, and tornado.log for structured log formatting."
+      "test_cmd": "command -v configurable-http-proxy >/dev/null 2>&1 || npm install -g configurable-http-proxy; python -m pytest jupyterhub/tests/test_api.py jupyterhub/tests/test_services_auth.py jupyterhub/tests/test_metrics.py jupyterhub/tests/test_dummyauth.py -q -p no:cacheprovider --cov-config=/dev/null --cov=tornado --cov-report=term-missing",
+      "notes": "Runs JupyterHub's live-server REST API / service-auth / metrics suites against a real MockHub Tornado application (the `app` fixture boots Hub + a configurable-http-proxy node process and serves real HTTP). ~194 tests in ~2.5 min. PREREQUISITE: the `configurable-http-proxy` npm binary must be on PATH (the test_cmd installs it globally via npm if missing; node/npm are assumed available). --cov-config=/dev/null bypasses the project's .coveragerc which omits site-packages. Tornado coverage ~42% (web 50%, httpserver 76%, httputil 60%, ioloop 67%, concurrent 76%) — up from ~9% when only logic-only tests ran. test_pages/test_named_servers were left out because they spawn real single-user notebook servers and blow the time budget; the selected files give the bulk of the Tornado-web coverage. Uses tornado.options for CLI/config parsing (uncommon among these packages), tornado.gen and tornado.concurrent heavily for OAuth and auth-provider coroutine flows, and tornado.log for structured log formatting."
     },
     {
       "name": "distributed",
@@ -68,7 +68,7 @@
       "reason": "Celery monitoring web UI, ~6.5k stars; Flower is a Tornado application.",
       "subdir": ".",
       "test_cmd": "python -m pytest tests/ -x -q --cov=tornado --cov-report=term-missing",
-      "notes": "Full test suite is small and self-contained. Tornado coverage ~20%. The most complete 'classic Tornado app' usage in this set: uses tornado.auth for OAuth2/Google login integration (the only package here that exercises tornado.auth), tornado.options for CLI argument parsing, tornado.template for HTML rendering (76% coverage, highest among all packages), tornado.locale for i18n, and tornado.testing as its test base."
+      "notes": "Full test suite is small and self-contained. Tornado coverage ~20%. The most complete 'classic Tornado app' usage in this set: uses tornado.auth for OAuth2/Google login integration (the only package here that exercises tornado.auth), tornado.options for CLI argument parsing, tornado.template for HTML rendering (76% coverage, highest among all packages), tornado.locale for i18n, and tornado.testing as its test base. NOTE: although flower is the only consumer of tornado.auth, its committed suite only covers the authenticate()/validate_auth_option() helpers and HTTP Basic auth — it has NO tests that drive the OAuth2 login handlers (GoogleOAuth2Mixin.get_authenticated_user, authorize_redirect, oauth2_request), so auth.py stays at ~18%. Raising it would require new OAuth-flow tests (out of scope here)."
     },
     {
       "name": "ipykernel",
@@ -76,8 +76,8 @@
       "ref": "v6.29.5",
       "reason": "IPython kernel for Jupyter, ~650 stars; uses Tornado via jupyter_client.",
       "subdir": ".",
-      "test_cmd": "python -m pytest tests/test_kernelspec.py tests/test_jsonutil.py tests/test_connect.py -x -q --cov=tornado --cov-report=term-missing",
-      "notes": "Tests don't require a running kernel. Tornado coverage ~3%. Distinctive usage: only uses tornado's async primitives (tornado.gen, tornado.locks, tornado.queues, tornado.concurrent) and the asyncio event-loop bridge (tornado.platform.asyncio); does not use the web framework, HTTP server, TCP server, or WebSocket layer at all. Tornado is accessed entirely through jupyter_client's kernel protocol."
+      "test_cmd": "python -m ipykernel install --sys-prefix --name python3 >/dev/null 2>&1; python -m pytest tests/ -q -p no:cacheprovider --deselect tests/test_message_spec.py --deselect tests/test_debugger.py::test_attach_debug --deselect tests/test_eventloop.py::test_asyncio_interrupt --deselect tests/test_start_kernel.py::test_ipython_start_kernel_userns --cov-config=/dev/null --cov=tornado --cov-report=term-missing",
+      "notes": "Runs ipykernel's full suite, which starts real IPython kernels over ZeroMQ driven by Tornado's asyncio event loop. The editable install's auto-generated kernelspec points at uv's build-time Python (since cleaned), so the test_cmd reinstalls a correct kernelspec with 'ipykernel install --sys-prefix' first. ~140 tests in ~1 min. Per-module Tornado coverage jumps vs the old import-only ~3%: tornado.platform.asyncio 41%, ioloop 58%, queues 51%, concurrent 38%, locks 36%, gen 27% (overall TOTAL stays low because ipykernel touches none of the web/HTTP/WebSocket layers). Deselects are non-Tornado env issues: test_message_spec uses nose-style module setup() that pytest 9 no longer calls (its kernel client stays None); test_attach_debug needs debugpy; the interrupt and IPython-userns cases are platform/version specific. Distinctive usage: only uses tornado's async primitives (tornado.gen, tornado.locks, tornado.queues, tornado.concurrent) and the asyncio event-loop bridge (tornado.platform.asyncio); does not use the web framework, HTTP server, TCP server, or WebSocket layer at all. Tornado is accessed entirely through jupyter_client's kernel protocol."
     },
     {
       "name": "panel",
@@ -87,8 +87,8 @@
       "subdir": ".",
       "install_method": "pypi",
       "pypi_spec": "panel==1.5.3 pytest pytest-asyncio",
-      "test_cmd": "python -m pytest -o addopts= panel/tests/test_util.py panel/tests/io/test_state.py panel/tests/io/test_document.py panel/tests/io/test_location.py panel/tests/io/test_notebook.py panel/tests/io/test_reload.py -q --cov=tornado --cov-report=term-missing",
-      "notes": "Installing the published wheel because the source build runs a full npm/bokeh bundling step. Tests are still run from the checkout. Tornado coverage ~14%. Uses tornado.wsgi for WSGI middleware integration (the only package in this set that exercises tornado.wsgi), tornado.websocket for live push updates to the browser, and inherits the Bokeh server's tornado.queues and tornado.locks usage."
+      "test_cmd": "python -m pytest -o addopts= -p no:unraisableexception panel/tests/test_util.py panel/tests/io/test_state.py panel/tests/io/test_document.py panel/tests/io/test_location.py panel/tests/io/test_notebook.py panel/tests/io/test_reload.py -q --cov=tornado --cov-report=term-missing",
+      "notes": "Installing the published wheel because the source build runs a full npm/bokeh bundling step. Tests are still run from the checkout. Tornado coverage ~14%. '-p no:unraisableexception' disables pytest's capture of unraisable exceptions: panel's filterwarnings=error promotes GC-time 'ResourceWarning: unclosed socket' from its Bokeh/Tornado server fixtures into hard errors at teardown (40 tests pass, only the shutdown sweep fails) — a pytest/GC-timing artifact, not a Tornado regression. Uses tornado.wsgi for WSGI middleware integration (the only package in this set that exercises tornado.wsgi), tornado.websocket for live push updates to the browser, and inherits the Bokeh server's tornado.queues and tornado.locks usage."
     },
     {
       "name": "voila",
@@ -99,7 +99,7 @@
       "install_method": "pypi",
       "pypi_spec": "voila==0.5.8 pytest",
       "test_cmd": "python -m pytest -o addopts= tests/utils_test.py -x -q --cov=tornado --cov-report=term-missing",
-      "notes": "Source build tries to fetch bundled CSS from a URL that 403s in sandboxed envs; install the published wheel and run the test files from the checkout. Server-integration tests require pytest-jupyter fixtures not auto-registered in this setup. Tornado coverage ~9%. Uses tornado.template heavily for converting notebook cells to HTML output (49% coverage, second-highest template usage after flower), and tornado.websocket for kernel communication. Does not use tornado.auth, tornado.options, or tornado.wsgi."
+      "notes": "Source build tries to fetch bundled CSS from a URL that 403s in sandboxed envs; install the published wheel and run the test files from the checkout. Tornado coverage ~9%. Uses tornado.template heavily for converting notebook cells to HTML output (49% coverage, second-highest template usage after flower), and tornado.websocket for kernel communication. Does not use tornado.auth, tornado.options, or tornado.wsgi. NOTE ON THE LIVE-SERVER SUITE: Voila's tests/app and tests/server integration suites DO drive real Tornado servers (via the pytest-tornasync `http_server_client` fixture) and execute notebooks over a real kernel WebSocket, and when they complete they lift Tornado coverage to ~30% (websocket 63%, iostream 43%, web 32%, template 29%). They are intentionally NOT used as the default test_cmd here: under the harness's always-fresh venv, the cold-start kernel WebSocket tests deadlock intermittently (~50% of runs) in a ZeroMQ poll that swallows both pytest-timeout's SIGALRM and a plain SIGTERM, hanging the run until SIGKILL. That made the package a coin-flip in an unattended harness. To opt into the fuller suite manually (e.g. when investigating Tornado WebSocket behaviour), install 'pytest-tornasync pytest-timeout ipykernel' alongside the wheel and run 'tests/app tests/server' under 'timeout -s KILL 600', deselecting the custom-template / papermill / xeus-C++ feature tests that need assets absent from the wheel sandbox."
     }
   ]
 }
