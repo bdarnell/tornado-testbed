@@ -71,14 +71,12 @@ TORNADO_SPEC="git+https://github.com/tornadoweb/tornado.git@my-branch" ./scripts
 ONLY="flower bokeh" ./scripts/ci.sh   # restrict to specific packages
 ```
 
-Two thin workflows drive it:
-
-- `.github/workflows/testbed.yml` — this repo's self-test. Run it from the
-  Actions tab with a `tornado_ref` input to test against any Tornado
-  branch/tag/SHA.
-- `ci/tornado-downstream-testbed.yml` — a `workflow_dispatch` action meant to
-  live in the **tornado** repo; it runs this harness against the tornado branch
-  selected for the run. See `ci/README.md` for how to install it.
+`.github/workflows/testbed.yml` is the thin workflow that drives it: run it from
+the Actions tab and give it a `tornado_spec` input — anything `uv pip install`
+accepts (a `git+`URL to a branch or fork, a version pin, a wheel, ...), defaulting
+to tornado's `master`. The job runs `scripts/ci.sh` and uploads `logs/`,
+`results/`, and `coverage_html/` as the `testbed-results` artifact; nothing is
+committed back.
 
 ## Selection criteria
 

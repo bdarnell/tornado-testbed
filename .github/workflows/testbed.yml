@@ -6,10 +6,10 @@ name: testbed
 on:
   workflow_dispatch:
     inputs:
-      tornado_ref:
-        description: "Tornado branch / tag / SHA to test against"
+      tornado_spec:
+        description: "What to install tornado from (any `uv pip install` spec: a git+URL to a branch/fork, a version pin, a wheel, ...)"
         required: false
-        default: "master"
+        default: "git+https://github.com/tornadoweb/tornado.git@master"
 
 jobs:
   run:
@@ -23,7 +23,7 @@ jobs:
       - name: Run testbed
         id: testbed
         env:
-          TORNADO_SPEC: "git+https://github.com/tornadoweb/tornado.git@${{ inputs.tornado_ref }}"
+          TORNADO_SPEC: "${{ inputs.tornado_spec }}"
         run: ./scripts/ci.sh
 
       - name: Upload results

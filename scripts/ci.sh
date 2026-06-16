@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # Run the full testbed in a CI environment (e.g. GitHub Actions).
 #
-# This is the single entry point both workflows (this repo's own test action
-# and the workflow_dispatch action that lives in the tornado repo) call, so the
+# This is the single entry point the workflow_dispatch action calls, so the
 # YAML stays thin and all the logic lives here in version-controlled scripts.
 #
 # Unlike a local run it never writes anything back into git history: results are
