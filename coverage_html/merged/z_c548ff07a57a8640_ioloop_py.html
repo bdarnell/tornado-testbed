@@ -2,17 +2,17 @@
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Coverage for packages/streamlit/.venv/lib/python3.11/site-packages/tornado/ioloop.py: 71%</title>
+    <title>Coverage for packages/streamlit/.venv/lib/python3.11/site-packages/tornado/ioloop.py: 73%</title>
     <link rel="icon" sizes="32x32" href="favicon_32_cb_c827f16f.png">
-    <link rel="stylesheet" href="style_cb_9ff733b0.css" type="text/css">
+    <link rel="stylesheet" href="style_cb_4667309f.css" type="text/css">
     <script src="coverage_html_cb_dd2e7eb5.js" defer></script>
 </head>
 <body class="pyfile">
 <header>
     <div class="content">
         <h1>
-            <span class="text">Coverage for </span><b>packages&#8201;/&#8201;streamlit&#8201;/&#8201;.venv&#8201;/&#8201;lib&#8201;/&#8201;python3.11&#8201;/&#8201;site-packages&#8201;/&#8201;tornado&#8201;/&#8201;ioloop.py</b>:
-            <span class="pc_cov">71%</span>
+            <span class="text">Coverage for </span><b>packages<span class="sep">/</span>streamlit<span class="sep">/</span>.venv<span class="sep">/</span>lib<span class="sep">/</span>python3.11<span class="sep">/</span>site-packages<span class="sep">/</span>tornado<span class="sep">/</span>ioloop.py</b>:
+            <span class="pc_cov">73%</span>
         </h1>
         <aside id="help_panel_wrapper">
             <input id="help_panel_state" type="checkbox">
@@ -55,8 +55,8 @@
         </aside>
         <h2>
             <span class="text">277 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">197<span class="text"> run</span></button>
-            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">80<span class="text"> missing</span></button>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">201<span class="text"> run</span></button>
+            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">76<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">5<span class="text"> excluded</span></button>
         </h2>
         <p class="text">
@@ -64,8 +64,8 @@
             <a id="indexLink" class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
             <a id="nextFileLink" class="nav" href="z_c548ff07a57a8640_iostream_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-17 21:52 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.14.1">coverage.py v7.14.1</a>,
+            created at 2026-06-16 06:13 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -856,8 +856,8 @@
     <p class="run"><span class="n"><a id="t774" href="#t774">774</a></span><span class="t">                    <span class="nam">self</span><span class="op">.</span><span class="nam">add_future</span><span class="op">(</span><span class="nam">ret</span><span class="op">,</span> <span class="nam">self</span><span class="op">.</span><span class="nam">_discard_future_result</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t775" href="#t775">775</a></span><span class="t">        <span class="key">except</span> <span class="nam">asyncio</span><span class="op">.</span><span class="nam">CancelledError</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t776" href="#t776">776</a></span><span class="t">            <span class="key">pass</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t777" href="#t777">777</a></span><span class="t">        <span class="key">except</span> <span class="nam">Exception</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t778" href="#t778">778</a></span><span class="t">            <span class="nam">app_log</span><span class="op">.</span><span class="nam">error</span><span class="op">(</span><span class="str">"Exception in callback %r"</span><span class="op">,</span> <span class="nam">callback</span><span class="op">,</span> <span class="nam">exc_info</span><span class="op">=</span><span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t777" href="#t777">777</a></span><span class="t">        <span class="key">except</span> <span class="nam">Exception</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t778" href="#t778">778</a></span><span class="t">            <span class="nam">app_log</span><span class="op">.</span><span class="nam">error</span><span class="op">(</span><span class="str">"Exception in callback %r"</span><span class="op">,</span> <span class="nam">callback</span><span class="op">,</span> <span class="nam">exc_info</span><span class="op">=</span><span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t779" href="#t779">779</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t780" href="#t780">780</a></span><span class="t">    <span class="key">def</span> <span class="nam">_discard_future_result</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="nam">future</span><span class="op">:</span> <span class="nam">Future</span><span class="op">)</span> <span class="op">-></span> <span class="key">None</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t781" href="#t781">781</a></span><span class="t">        <span class="str">"""Avoid unhandled-exception warnings from spawned coroutines."""</span>&nbsp;</span><span class="r"></span></p>
@@ -1026,7 +1026,7 @@
     <p class="run"><span class="n"><a id="t944" href="#t944">944</a></span><span class="t">        <span class="key">try</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t945" href="#t945">945</a></span><span class="t">            <span class="nam">val</span> <span class="op">=</span> <span class="nam">self</span><span class="op">.</span><span class="nam">callback</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t946" href="#t946">946</a></span><span class="t">            <span class="key">if</span> <span class="nam">val</span> <span class="key">is</span> <span class="key">not</span> <span class="key">None</span> <span class="key">and</span> <span class="nam">isawaitable</span><span class="op">(</span><span class="nam">val</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t947" href="#t947">947</a></span><span class="t">                <span class="key">await</span> <span class="nam">val</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t947" href="#t947">947</a></span><span class="t">                <span class="key">await</span> <span class="nam">val</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t948" href="#t948">948</a></span><span class="t">        <span class="key">except</span> <span class="nam">Exception</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t949" href="#t949">949</a></span><span class="t">            <span class="nam">app_log</span><span class="op">.</span><span class="nam">error</span><span class="op">(</span><span class="str">"Exception in callback %r"</span><span class="op">,</span> <span class="nam">self</span><span class="op">.</span><span class="nam">callback</span><span class="op">,</span> <span class="nam">exc_info</span><span class="op">=</span><span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t950" href="#t950">950</a></span><span class="t">        <span class="key">finally</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -1041,7 +1041,7 @@
     <p class="run"><span class="n"><a id="t959" href="#t959">959</a></span><span class="t">        <span class="nam">callback_time_sec</span> <span class="op">=</span> <span class="nam">self</span><span class="op">.</span><span class="nam">callback_time</span> <span class="op">/</span> <span class="num">1000.0</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t960" href="#t960">960</a></span><span class="t">        <span class="key">if</span> <span class="nam">self</span><span class="op">.</span><span class="nam">jitter</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t961" href="#t961">961</a></span><span class="t">            <span class="com"># apply jitter fraction</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t962" href="#t962">962</a></span><span class="t">            <span class="nam">callback_time_sec</span> <span class="op">*=</span> <span class="num">1</span> <span class="op">+</span> <span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">jitter</span> <span class="op">*</span> <span class="op">(</span><span class="nam">random</span><span class="op">.</span><span class="nam">random</span><span class="op">(</span><span class="op">)</span> <span class="op">-</span> <span class="num">0.5</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t962" href="#t962">962</a></span><span class="t">            <span class="nam">callback_time_sec</span> <span class="op">*=</span> <span class="num">1</span> <span class="op">+</span> <span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">jitter</span> <span class="op">*</span> <span class="op">(</span><span class="nam">random</span><span class="op">.</span><span class="nam">random</span><span class="op">(</span><span class="op">)</span> <span class="op">-</span> <span class="num">0.5</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t963" href="#t963">963</a></span><span class="t">        <span class="key">if</span> <span class="nam">self</span><span class="op">.</span><span class="nam">_next_timeout</span> <span class="op">&lt;=</span> <span class="nam">current_time</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t964" href="#t964">964</a></span><span class="t">            <span class="com"># The period should be measured from the start of one call</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t965" href="#t965">965</a></span><span class="t">            <span class="com"># to the start of the next. If one call takes too long,</span>&nbsp;</span><span class="r"></span></p>
@@ -1074,8 +1074,8 @@
             <a class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
             <a class="nav" href="z_c548ff07a57a8640_iostream_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-17 21:52 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.14.1">coverage.py v7.14.1</a>,
+            created at 2026-06-16 06:13 +0000
         </p>
     </div>
 </footer>

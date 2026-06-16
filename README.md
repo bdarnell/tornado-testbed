@@ -14,10 +14,15 @@ scripts/
   setup.sh             # clone each package at its pinned ref
   run_one.sh           # build an isolated uv venv and run one package's tests
   run_all.sh           # iterate run_one.sh over every package, summarise
+  summarize.sh         # rebuild results/summary.txt from results/<name>.txt
+  gen_reports.sh       # rebuild coverage_html/ from coverage/<name>.coverage
 packages/              # populated by setup.sh (one git checkout per package)
 logs/<name>.log        # full stdout+stderr for each package run
 results/<name>.txt     # key=value summary for each package run
 results/summary.txt    # overall table
+coverage_html/         # committed HTML coverage reports (per package + merged)
+REPORT.md              # current state of the harness
+notes/                 # dated per-session history (see notes/README.md)
 ```
 
 ## Prerequisites
