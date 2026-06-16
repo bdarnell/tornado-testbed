@@ -114,6 +114,49 @@ if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
     echo "${summary_md}" >> "${GITHUB_STEP_SUMMARY}"
 fi
 
+# ── Surface failing-package logs inline ──────────────────────────────────────
+# run_all.sh discards each package's stdout (it only lands in logs/<name>.log,
+# which is artifact-only). For anything that didn't PASS, echo the tail of its
+# log into a collapsible Actions group so the traceback is readable directly in
+# the web UI without downloading the artifact, and append the pytest summary to
+# the job summary.
+LOG_TAIL="${LOG_TAIL:-200}"
+for res in "${RESULTS_DIR}"/*.txt; do
+    [[ -e "${res}" ]] || continue
+    [[ "$(basename "${res}")" == "summary.txt" ]] && continue
+    status="$(awk -F= '/^status=/ {print $2}' "${res}")"
+    [[ "${status}" == "PASS" ]] && continue
+
+    name="$(awk -F= '/^package=/ {print $2}' "${res}")"
+    name="${name:-$(basename "${res}" .txt)}"
+    log="${LOGS_DIR}/${name}.log"
+    [[ -f "${log}" ]] || continue
+
+    group "FAILED ${name} (${status}) — last ${LOG_TAIL} lines of ${name}.log"
+    tail -n "${LOG_TAIL}" "${log}"
+    endgroup
+
+    # Pytest's "short test summary info" block is the most useful one-glance
+    # digest; fall back to the log tail if the run never reached that point.
+    if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+        digest="$(sed 's/\x1b\[[0-9;]*m//g' "${log}" \
+                  | grep -E '^(FAILED|ERROR) |[0-9]+ (failed|passed|error)' \
+                  | head -n 60)"
+        [[ -z "${digest}" ]] && digest="$(tail -n "${LOG_TAIL}" "${log}" \
+                  | sed 's/\x1b\[[0-9;]*m//g')"
+        {
+            echo ""
+            echo "<details><summary>❌ ${name} (${status}) — failure detail</summary>"
+            echo ""
+            echo '```'
+            echo "${digest}"
+            echo '```'
+            echo ""
+            echo "</details>"
+        } >> "${GITHUB_STEP_SUMMARY}"
+    fi
+done
+
 # ci.sh itself always exits 0: a downstream test failure is data we want to
 # report (and still upload artifacts for), not an infrastructure error. The
 # workflow can inspect the `failed` output to decide whether to flag the run.
