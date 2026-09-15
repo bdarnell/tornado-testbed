@@ -123,5 +123,13 @@ carried between packages.
   expect intermittency.
 - **Orphaned test processes** from killed runs (voila kernels especially) pile
   up and contend for CPU — `pgrep -f pytest` before trusting timing.
+- **Dependency drift shows up as a permanent red run**, which hides the
+  Tornado regressions the harness exists to find. jupyter_server's
+  `tests/test_utils.py::test_check_version` is the current example: it passes a
+  float to `packaging.Version`, which newer `packaging` rejects with
+  `InvalidVersion` instead of the `TypeError` the code catches — red on every
+  Tornado version. Deselect this kind of failure (with the reason in the
+  package's `notes`) so that a red package means a Tornado regression.
+
 - **Protobuf codegen** for streamlit is a hard prereq; the manifest's
   `setup_extra` hook runs `protoc` for that one package.
