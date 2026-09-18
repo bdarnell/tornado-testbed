@@ -1,3 +1,0 @@
-# The downstream release under test. Dependabot updates this file; the
-# git tag is derived from it via tag_template in package.env.
-streamlit==1.40.0

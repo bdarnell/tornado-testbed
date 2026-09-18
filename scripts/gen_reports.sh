@@ -24,6 +24,19 @@ mkdir -p "${REPORTS_DIR}"
 mapfile -t names < <(pkg_names)
 canonical_tornado=""   # set on first successful package
 
+# Drop report directories for packages that no longer exist. A stale report is
+# worse than a missing one: it keeps publishing coverage for a package that was
+# removed, and nothing about the page says it is out of date.
+for existing in "${REPORTS_DIR}"/*/; do
+    [[ -d "${existing}" ]] || continue
+    stale_name="$(basename "${existing}")"
+    [[ "${stale_name}" == "merged" ]] && continue
+    if [[ ! -d "${PKGDEFS_DIR}/${stale_name}" ]]; then
+        echo "Removing stale report for ${stale_name} (no longer a package)"
+        rm -rf "${REPORTS_DIR:?}/${stale_name}"
+    fi
+done
+
 # ── per-package reports ─────────────────────────────────────────────────────
 for name in "${names[@]}"; do
     cov_file="${COV_DIR}/${name}.coverage"

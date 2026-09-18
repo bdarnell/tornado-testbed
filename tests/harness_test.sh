@@ -34,6 +34,9 @@ new_root() {
     local root
     root="$(mktemp -d -p "${TMPROOT}")"
     cp -r "${REPO}/scripts" "${root}/scripts"
+    # The real build constraints come along, so these tests exercise the same
+    # install path a real run takes rather than routing around it.
+    cp "${REPO}/build-constraints.txt" "${root}/build-constraints.txt"
     mkdir -p "${root}/packages"
     echo "${root}"
 }
@@ -234,6 +237,17 @@ else
     # shellcheck disable=SC2016  # the test body is evaluated inside the package
     check "COVERAGE=1 leaves COV_ARGS to the package default" "PASS 0" \
         "$(run_status '[[ "${COV_ARGS-unset}" == "unset" ]]' TORNADO_SPEC=tornado COVERAGE=1)"
+
+    # uv errors on a constraints file that is not there, so pointing at one
+    # unconditionally turned every install into an INSTALL_FAIL. A checkout
+    # without the file must still work.
+    r="$(new_root)"
+    rm -f "${r}/build-constraints.txt"
+    make_pkg "${r}" subject 1 'true'
+    ( cd "${r}" && TORNADO_SPEC=tornado ./scripts/run_one.sh subject >/dev/null 2>&1 )
+    rc=$?
+    status="$(awk -F= '/^status=/ {print $2}' "${r}/results/subject.txt" 2>/dev/null)"
+    check "a missing build-constraints.txt is not fatal" "PASS 0" "${status} ${rc}"
 fi
 
 echo ""

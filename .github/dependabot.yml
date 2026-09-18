@@ -19,8 +19,14 @@ updates:
       - "/packages/*"
     schedule:
       interval: "weekly"
-    # Ten packages, so the default of 5 would starve some of them.
+    # One PR per package, so the default of 5 would starve some of them.
     open-pull-requests-limit: 12
+    # No `ignore` rules on purpose. A pin frozen here is a pin nobody revisits,
+    # and the two candidates for one did not survive scrutiny: streamlit was
+    # removed outright once it moved off Tornado, and jupyter_server tracks
+    # upstream even though that cost the tornado#3724 detector (see that
+    # package's README). Add one only with a reason that will still read as
+    # sound a year from now.
     commit-message:
       prefix: "pins"
     labels:

@@ -54,12 +54,24 @@ exports empty when a run is not measuring coverage.
 
 ## Selection criteria
 
-The ten packages are the most popular Python packages that depend directly on
-Tornado, chosen by a combination of GitHub stars and PyPI download volume. Each:
+These are the most popular Python packages that depend directly on Tornado,
+chosen by a combination of GitHub stars and PyPI download volume. Each:
 
 - declares `tornado` in its own install requirements (direct, not transitive)
 - is popular on GitHub (stars) and/or PyPI (downloads)
 - has an active repository with a runnable test suite
+
+### Removed
+
+- **streamlit** — was rank 1, and the single largest contributor to merged
+  Tornado coverage (~45%). It migrated to Starlette/uvicorn in **1.57.0**;
+  1.64.0 declares no dependency on Tornado and contains no `tornado` imports at
+  all. It no longer meets the first criterion, so it was dropped rather than
+  frozen at 1.56.0 — a pin that could never move again would have gone on
+  reporting coverage for code the ecosystem is leaving behind.
+
+  Restoring the set to ten means redoing the selection work for a replacement,
+  which has not been done yet.
 
 ## Adding a package
 

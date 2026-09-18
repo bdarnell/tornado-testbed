@@ -24,7 +24,13 @@ mkdir -p "${CHECKOUTS_DIR}" "${LOGS_DIR}" "${RESULTS_DIR}"
 # including the ones inside a package's test.sh. A build-backend release can
 # stop an older downstream pin from building at all, which looks like a testbed
 # failure but says nothing about Tornado. See build-constraints.txt.
-export UV_BUILD_CONSTRAINT="${UV_BUILD_CONSTRAINT:-${ROOT_DIR}/build-constraints.txt}"
+#
+# Only set when the file is actually there: uv treats a missing constraints file
+# as an error, so pointing at one unconditionally would turn every install into
+# an INSTALL_FAIL rather than degrading to "no constraints".
+if [[ -z "${UV_BUILD_CONSTRAINT:-}" && -f "${ROOT_DIR}/build-constraints.txt" ]]; then
+    export UV_BUILD_CONSTRAINT="${ROOT_DIR}/build-constraints.txt"
+fi
 
 # All package names, in rank (popularity) order.
 pkg_names() { python3 "${PKGLIB}" names; }

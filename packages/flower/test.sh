@@ -11,4 +11,7 @@ set -euo pipefail
 read -ra cov <<<"${COV_ARGS---cov=tornado --cov-report=term-missing}"
 
 # flower's whole suite is small and self-contained, so run all of it.
-python -m pytest tests/ -x -q "${cov[@]}"
+#
+# Deliberately no -x: a gate should report every failure in one go rather than
+# stop at the first, and this suite takes seconds.
+python -m pytest tests/ -q "${cov[@]}"

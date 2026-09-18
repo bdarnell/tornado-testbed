@@ -1,6 +1,6 @@
 # Working in this repo
 
-A harness that runs the test suites of the ten most popular Tornado dependents
+A harness that runs the test suites of the most popular Tornado dependents
 against a chosen Tornado build. It is called from tornado's own release build as
 a reusable workflow, so it is release infrastructure: correctness of the
 *signal* matters more than convenience.
@@ -53,6 +53,8 @@ tests/harness_test.sh
 shellcheck scripts/*.sh packages/*/*.sh
 ```
 
-The end-to-end check that the gate still works is the tornado#3724 replay:
-`jupyter_server` must fail on `tornado==6.5.9` and pass on `6.5.10`. See
-`packages/jupyter_server/README.md`.
+To check that the gate still catches a real Tornado regression, replay
+tornado#3724 — but note it does **not** work at the current pin: jupyter_server
+2.21.1 passes on 6.5.9. The replay needs the package temporarily pinned back to
+2.14.2, and `packages/jupyter_server/README.md` has the exact procedure. Running
+it against the current pin and seeing green proves nothing.

@@ -21,7 +21,11 @@
 #                           TORNADO_MISMATCH. Set by ci.sh when the spec is a
 #                           wheel/sdist whose filename names the version.
 #   TIMEOUT_SECS            Per-package wall-clock limit (default 900).
-#   PYTHON_VERSION          Interpreter for the venv (default 3.11).
+#   PYTHON_VERSION          Interpreter for the venv (default 3.13, matching
+#                           tornado's own default_python_minor). Current
+#                           downstream releases are already dropping older
+#                           interpreters -- bokeh 3.10 requires >=3.12 -- so this
+#                           needs to track what the ecosystem builds against.
 #   RETRY_TIMEOUT           Re-run once on timeout (default 1). The real-kernel
 #                           ZeroMQ suites deadlock intermittently; see REPORT.md.
 #   COVERAGE                "1" (default) measures Tornado coverage. When "0",
@@ -42,7 +46,7 @@ source "$(dirname "$0")/common.sh"
 TORNADO_SPEC="${TORNADO_SPEC:-tornado}"   # e.g. TORNADO_SPEC="tornado==6.5.1"
 TORNADO_EXPECT_VERSION="${TORNADO_EXPECT_VERSION:-}"
 TIMEOUT_SECS="${TIMEOUT_SECS:-900}"
-PYTHON_VERSION="${PYTHON_VERSION:-3.11}"
+PYTHON_VERSION="${PYTHON_VERSION:-3.13}"
 RETRY_TIMEOUT="${RETRY_TIMEOUT:-1}"
 
 usage() {
