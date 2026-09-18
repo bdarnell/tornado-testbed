@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # Run the test suite for a single package (by index or name) in an isolated
 # uv-managed virtualenv. Each invocation:
-#   1. Creates a fresh .venv under the package directory
-#   2. Installs the package with its test extras (pip install ".[test]")
-#   3. Force-installs the Tornado under test (TORNADO_SPEC)
-#   4. Runs the test command from the manifest, streaming output to a log
-#   5. Verifies the Tornado under test is still the one that was installed
+#   1. Creates a fresh .venv under the checkout
+#   2. Installs the package (editable with its test extras, or the pinned wheel)
+#   3. Runs the package's optional setup.sh hook
+#   4. Force-installs the Tornado under test (TORNADO_SPEC)
+#   5. Runs the package's test.sh, streaming output to a log
+#   6. Verifies the Tornado under test is still the one that was installed
 # Exits with the test command's exit code, or one of the status codes below.
 #
 # Because this script is the thing a release gate believes, every step that
@@ -23,13 +24,16 @@
 #   PYTHON_VERSION          Interpreter for the venv (default 3.11).
 #   RETRY_TIMEOUT           Re-run once on timeout (default 1). The real-kernel
 #                           ZeroMQ suites deadlock intermittently; see REPORT.md.
+#   COVERAGE                "1" (default) measures Tornado coverage. When "0",
+#                           COV_ARGS is exported empty so each package's test.sh
+#                           drops its --cov flags and pytest-cov is not installed.
 #
 # Statuses / exit codes:
 #   PASS                   0
 #   FAIL                   test command's own non-zero code
 #   TIMEOUT                124
 #   INSTALL_FAIL           3   package (not tornado) failed to install
-#   SETUP_FAIL             4   venv creation or the setup_extra hook failed
+#   SETUP_FAIL             4   venv creation or the package's setup.sh failed
 #   TORNADO_INSTALL_FAIL   5   the Tornado under test would not install
 #   TORNADO_MISMATCH       6   the env does not hold the Tornado under test
 set -uo pipefail
@@ -42,35 +46,18 @@ PYTHON_VERSION="${PYTHON_VERSION:-3.11}"
 RETRY_TIMEOUT="${RETRY_TIMEOUT:-1}"
 
 usage() {
-    echo "usage: $0 <index-or-name>" >&2
+    echo "usage: $0 <name-or-rank>" >&2
     exit 2
 }
 
 [[ $# -eq 1 ]] || usage
-SEL="$1"
 
-# Resolve selector -> index.
-N="$(pkg_count)"
-idx=""
-if [[ "${SEL}" =~ ^[0-9]+$ ]]; then
-    idx="${SEL}"
-else
-    for ((i = 0; i < N; i++)); do
-        if [[ "$(pkg_field "$i" name)" == "${SEL}" ]]; then
-            idx="$i"; break
-        fi
-    done
-fi
-[[ -n "${idx}" ]] || { echo "Unknown package: ${SEL}" >&2; exit 2; }
+# Resolve the selector and load the package's definition in one step.
+name="$(pkg_resolve "$1")" || exit 2
+eval "$(pkg_load "${name}")"
 
-name="$(pkg_field "${idx}" name)"
-subdir="$(pkg_field "${idx}" subdir)"
-test_cmd="$(pkg_field "${idx}" test_cmd)"
-setup_extra="$(pkg_field "${idx}" setup_extra)"
-install_method="$(pkg_field "${idx}" install_method)"  # "" (default=editable) or "pypi"
-pypi_spec="$(pkg_field "${idx}" pypi_spec)"            # e.g. "panel==1.5.3"
-pkg_root="${PACKAGES_DIR}/${name}"
-work="${pkg_root}/${subdir}"
+checkout="${CHECKOUTS_DIR}/${name}"
+work="${checkout}/${PKG_SUBDIR}"
 log="${LOGS_DIR}/${name}.log"
 result="${RESULTS_DIR}/${name}.txt"
 
@@ -117,13 +104,14 @@ probe_tornado() {
 }
 
 if [[ ! -d "${work}" ]]; then
-    echo "Package ${name} not set up; run scripts/setup.sh first." >&2
+    echo "Package ${name} not checked out; run scripts/setup.sh ${name} first." >&2
     exit 2
 fi
 
 echo "=== ${name} ===" | tee "${log}"
 echo "Working dir:  ${work}" | tee -a "${log}"
-echo "Test command: ${test_cmd}" | tee -a "${log}"
+echo "Version:      ${PKG_DIST_NAME}==${PKG_VERSION} (ref ${PKG_REF})" | tee -a "${log}"
+echo "Test script:  ${PKG_TEST_SH}" | tee -a "${log}"
 echo "Tornado:      ${TORNADO_SPEC}" | tee -a "${log}"
 [[ -n "${TORNADO_EXPECT_VERSION}" ]] && \
     echo "Expecting:    tornado ${TORNADO_EXPECT_VERSION}" | tee -a "${log}"
@@ -133,7 +121,7 @@ echo "" | tee -a "${log}"
 
 install_start=$(date +%s)
 
-venv="${pkg_root}/.venv"
+venv="${checkout}/.venv"
 rm -rf "${venv}"
 # An unchecked `uv venv` used to leave the `source` below failing, which under
 # `set +e` meant the suite ran against the system python.
@@ -149,14 +137,19 @@ fi
 
 # Install the package.
 install_ok=0
-if [[ "${install_method}" == "pypi" ]]; then
-    # Install the published wheel (for packages whose source build requires
-    # a JS toolchain or network-fetched assets). Run tests from the cloned
-    # source tree, but against the site-packages version.
-    echo ">>> Trying PyPI install: uv pip install ${pypi_spec}" >>"${log}"
-    # shellcheck disable=SC2086  # intentional word-split on ${pypi_spec}
-    if uv pip install ${pypi_spec} >>"${log}" 2>&1; then
+if [[ "${PKG_INSTALL_METHOD}" == "pypi" ]]; then
+    # Install the published wheel (for packages whose source build requires a JS
+    # toolchain or network-fetched assets). Tests still run from the cloned
+    # source tree, but against the site-packages version. requirements.txt is
+    # the same pin the checkout's ref was derived from.
+    echo ">>> PyPI install: uv pip install -r ${PKG_REQUIREMENTS}" >>"${log}"
+    if uv pip install -r "${PKG_REQUIREMENTS}" >>"${log}" 2>&1; then
         install_ok=1
+        if [[ -n "${PKG_PYPI_EXTRA_DEPS}" ]]; then
+            echo ">>> Extra deps: ${PKG_PYPI_EXTRA_DEPS}" >>"${log}"
+            # shellcheck disable=SC2086  # intentional word-split
+            uv pip install ${PKG_PYPI_EXTRA_DEPS} >>"${log}" 2>&1 || install_ok=0
+        fi
     fi
 else
     # Try editable with common test-extra names.
@@ -180,16 +173,24 @@ fi
 # Optional per-package post-install step (protoc codegen, etc).
 # Runs after package installation so that dep resolution (e.g. protobuf version)
 # is constrained by what the package already requires.
-if [[ -n "${setup_extra}" ]]; then
-    echo ">>> setup_extra: ${setup_extra}" >>"${log}"
-    if ! (cd "${work}" && bash -c "${setup_extra}") >>"${log}" 2>&1; then
+if [[ -n "${PKG_SETUP_SH}" ]]; then
+    echo ">>> setup hook: ${PKG_SETUP_SH}" >>"${log}"
+    if ! (cd "${work}" && bash "${PKG_SETUP_SH}") >>"${log}" 2>&1; then
         install_secs=$(( $(date +%s) - install_start ))
-        die SETUP_FAIL 4 "setup_extra failed"
+        die SETUP_FAIL 4 "setup.sh failed"
     fi
 fi
 
-# Test runner is almost always pytest; make sure it and coverage are available.
-uv pip install pytest pytest-cov >>"${log}" 2>&1 || true
+# Test runner is always pytest. pytest-cov is only needed when measuring, and a
+# gate run does not measure.
+if [[ "${COVERAGE:-1}" == "1" ]]; then
+    uv pip install pytest pytest-cov >>"${log}" 2>&1 || true
+else
+    uv pip install pytest >>"${log}" 2>&1 || true
+    # Each package's test.sh defaults COV_ARGS to its own --cov flags; exporting
+    # it empty is how the harness turns coverage off.
+    export COV_ARGS=""
+fi
 
 # Force the Tornado we want to test against. This must be a hard failure: a
 # typo'd spec or a dead git ref would otherwise leave the downstream resolver's
@@ -223,7 +224,7 @@ mkdir -p "${ROOT_DIR}/coverage"
 export COVERAGE_FILE="${ROOT_DIR}/coverage/${name}.coverage"
 
 run_tests() {
-    (cd "${work}" && timeout "${TIMEOUT_SECS}" bash -c "${test_cmd}") >>"${log}" 2>&1
+    (cd "${work}" && timeout "${TIMEOUT_SECS}" bash "${PKG_TEST_SH}") >>"${log}" 2>&1
 }
 
 # common.sh turns on `set -e`, so every invocation of the test command has to be

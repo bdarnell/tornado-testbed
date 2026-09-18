@@ -6,8 +6,9 @@ virtualenv against a chosen `TORNADO_SPEC`. Every run installs the package's
 pinned version (from source, or the PyPI wheel where the source build needs a
 JS toolchain or network assets), then forcibly upgrades `tornado` to the spec.
 
-> Per-session history — what changed when and why, with before/after numbers —
-> lives in [`notes/`](notes/). This file describes how things stand now.
+> This file describes how things stand now. Per-package detail — what each one
+> exercises and why its suite is shaped that way — lives in each
+> [`packages/<name>/README.md`](packages/).
 
 ## Current results (tornado 6.5.5)
 
@@ -31,14 +32,17 @@ results in `results/<package>.txt`; the table is reproducible with
 The jupyter_server / jupyterhub / ipykernel suites drive **real Tornado test
 servers** (live `ServerApp`s, a real MockHub + `configurable-http-proxy`, real
 IPython kernels over ZeroMQ); the others run focused server-layer subsets. Each
-package's `notes` field in `packages.json` records exactly what it exercises and
-why its `test_cmd` is shaped the way it is.
+package's `README.md` under `packages/` records exactly what it exercises and
+why its `test.sh` is shaped the way it is.
 
 ## Coverage
 
-HTML reports are in `coverage_html/<package>/` (per package) and
-`coverage_html/merged/` (union, path-remapped to one canonical Tornado);
-rebuild with `scripts/gen_reports.sh`. Merged Tornado coverage is **~61%**.
+HTML reports are built on demand, not committed: a serial run
+(`./scripts/ci.sh`, or `scripts/gen_reports.sh` after a run) writes
+`coverage_html/<package>/` and `coverage_html/merged/` (union, path-remapped to
+one canonical Tornado). The job matrix uploads the raw `.coverage` files
+instead, since per-package HTML needs each package's venv and those do not
+survive a matrix job. Merged Tornado coverage is **~61%**.
 
 | Package        | tornado coverage |
 |----------------|:----------------:|
@@ -56,7 +60,7 @@ rebuild with `scripts/gen_reports.sh`. Merged Tornado coverage is **~61%**.
 
 (ipykernel and distributed look low because they use only narrow slices of
 Tornado — async primitives / the asyncio bridge, and the bare TCP layer,
-respectively — but cover those slices well; see their `packages.json` notes.)
+respectively — but cover those slices well; see their `packages/<name>/README.md`.)
 
 ## Standing limitations & decisions
 
@@ -78,8 +82,8 @@ mind before assuming a number can simply be pushed up.
   and a plain SIGTERM — i.e. they can hang the whole run. To opt in manually:
   install `pytest-tornasync pytest-timeout ipykernel` alongside the wheel and
   run `tests/app tests/server` under `timeout -s KILL 600`, deselecting the
-  custom-template / papermill / xeus-C++ feature tests (see the voila note in
-  `packages.json`).
+  custom-template / papermill / xeus-C++ feature tests (see
+  `packages/voila/README.md`).
 
 - **System prerequisites for the live-server suites:** **node/npm** must be on
   PATH so jupyterhub can install/run `configurable-http-proxy`.
@@ -128,8 +132,14 @@ carried between packages.
   `tests/test_utils.py::test_check_version` is the current example: it passes a
   float to `packaging.Version`, which newer `packaging` rejects with
   `InvalidVersion` instead of the `TypeError` the code catches — red on every
-  Tornado version. Deselect this kind of failure (with the reason in the
-  package's `notes`) so that a red package means a Tornado regression.
+  Tornado version. Deselect this kind of failure, with the reason on the line
+  above the deselect in the package's `test.sh`, so that a red package means a
+  Tornado regression.
 
-- **Protobuf codegen** for streamlit is a hard prereq; the manifest's
-  `setup_extra` hook runs `protoc` for that one package.
+- **Drift can also break the *install*, not just the tests.** A pin old enough
+  stops building against current tooling: jupyter_server 2.14.2 and notebook
+  7.2.2 both failed `uv pip install -e .` outright under a current `hatchling`.
+  This is what dependabot and the weekly scheduled run exist to catch early.
+
+- **Protobuf codegen** for streamlit is a hard prereq; that package's
+  `setup.sh` hook generates the bindings.

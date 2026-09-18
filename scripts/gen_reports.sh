@@ -21,14 +21,13 @@ OMIT_PATTERN="*/tornado/test/*"
 
 mkdir -p "${REPORTS_DIR}"
 
-N="$(pkg_count)"
+mapfile -t names < <(pkg_names)
 canonical_tornado=""   # set on first successful package
 
 # ── per-package reports ─────────────────────────────────────────────────────
-for ((i = 0; i < N; i++)); do
-    name="$(pkg_field "$i" name)"
+for name in "${names[@]}"; do
     cov_file="${COV_DIR}/${name}.coverage"
-    venv="${PACKAGES_DIR}/${name}/.venv"
+    venv="${CHECKOUTS_DIR}/${name}/.venv"
 
     if [[ ! -f "${cov_file}" ]]; then
         echo "⚠  No coverage data for ${name} (expected ${cov_file}), skipping"
@@ -50,7 +49,7 @@ for ((i = 0; i < N; i++)); do
         echo "Canonical tornado source: ${canonical_tornado}"
     fi
 
-    rm -rf "${REPORTS_DIR}/${name}"
+    rm -rf "${REPORTS_DIR:?}/${name}"
     coverage html \
         --data-file="${cov_file}" \
         --rcfile=/dev/null \
@@ -91,14 +90,26 @@ MERGED_COV="${COV_DIR}/merged.coverage"
 
 # Collect all per-package coverage files that exist.
 cov_files=()
-for ((i = 0; i < N; i++)); do
-    name="$(pkg_field "$i" name)"
+for name in "${names[@]}"; do
     f="${COV_DIR}/${name}.coverage"
     [[ -f "${f}" ]] && cov_files+=("${f}")
 done
 
+# Any package's venv will do -- they all have coverage installed. Use the first
+# one that actually exists rather than assuming the highest-ranked package ran.
+venv_for_merge=""
+for name in "${names[@]}"; do
+    if [[ -d "${CHECKOUTS_DIR}/${name}/.venv" ]]; then
+        venv_for_merge="${CHECKOUTS_DIR}/${name}/.venv"
+        break
+    fi
+done
+if [[ -z "${venv_for_merge}" ]]; then
+    echo "No package venv available to build the merged report; skipping."
+    exit 0
+fi
 # shellcheck disable=SC1091
-source "${PACKAGES_DIR}/$(pkg_field 0 name)/.venv/bin/activate"
+source "${venv_for_merge}/bin/activate"
 
 COVERAGE_FILE="${MERGED_COV}" coverage combine \
     --rcfile="${MERGE_CFG}" \
