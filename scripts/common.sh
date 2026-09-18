@@ -20,6 +20,12 @@ RESULTS_DIR="${RESULTS_DIR:-${ROOT_DIR}/results}"
 
 mkdir -p "${CHECKOUTS_DIR}" "${LOGS_DIR}" "${RESULTS_DIR}"
 
+# Pin build-time (PEP 518) dependencies for every `uv pip install` in the run,
+# including the ones inside a package's test.sh. A build-backend release can
+# stop an older downstream pin from building at all, which looks like a testbed
+# failure but says nothing about Tornado. See build-constraints.txt.
+export UV_BUILD_CONSTRAINT="${UV_BUILD_CONSTRAINT:-${ROOT_DIR}/build-constraints.txt}"
+
 # All package names, in rank (popularity) order.
 pkg_names() { python3 "${PKGLIB}" names; }
 
