@@ -18,16 +18,27 @@
 #                 Defaults to "tornado" (latest PyPI release).
 #   ONLY          Optional space-separated list of package names/indices to run
 #                 instead of the whole manifest (handy for debugging the action).
+#   FAIL_ON_REGRESSION
+#                 "1" (default) exits non-zero unless every package passed, so
+#                 this can be used as a release gate. Set to "0" for a
+#                 report-only run.
 set -uo pipefail
 source "$(dirname "$0")/common.sh"
 
 export TORNADO_SPEC="${TORNADO_SPEC:-tornado}"
+FAIL_ON_REGRESSION="${FAIL_ON_REGRESSION:-1}"
 
 # GitHub Actions log-group helpers that degrade to no-ops outside Actions.
 group()    { [[ -n "${GITHUB_ACTIONS:-}" ]] && echo "::group::$*" || echo "=== $* ==="; }
 endgroup() { [[ -n "${GITHUB_ACTIONS:-}" ]] && echo "::endgroup::" || true; }
 
 echo "Testing downstream packages against TORNADO_SPEC=${TORNADO_SPEC}"
+
+# Start from a clean slate. Results are what this run measured, not a union with
+# whatever a previous run (or the committed snapshot) left behind -- otherwise a
+# stale results/<name>.txt counts toward the gate below, which matters most for
+# ONLY= runs that deliberately touch a subset.
+rm -f "${RESULTS_DIR}"/*.txt "${LOGS_DIR}"/*.log
 
 group "setup: clone downstream packages"
 bash "${ROOT_DIR}/scripts/setup.sh"
@@ -77,7 +88,8 @@ for path in sorted(glob.glob(os.path.join(results_dir, "*.txt"))):
                  kv.get("tornado", "?"), kv.get("test_secs", "?")))
 
 emoji = {"PASS": "✅", "FAIL": "❌", "TIMEOUT": "⏱️",
-         "INSTALL_FAIL": "🛠️", "SETUP_FAIL": "🛠️"}
+         "INSTALL_FAIL": "🛠️", "SETUP_FAIL": "🛠️",
+         "TORNADO_INSTALL_FAIL": "🌪️", "TORNADO_MISMATCH": "🌪️"}
 
 out = []
 out.append(f"## Tornado testbed results")
@@ -85,7 +97,8 @@ out.append("")
 out.append(f"**Tornado under test:** `{tornado_spec}`")
 out.append("")
 total = sum(counts.values())
-order = ["PASS", "FAIL", "TIMEOUT", "INSTALL_FAIL", "SETUP_FAIL", "UNKNOWN"]
+order = ["PASS", "FAIL", "TIMEOUT", "INSTALL_FAIL", "SETUP_FAIL",
+         "TORNADO_INSTALL_FAIL", "TORNADO_MISMATCH", "UNKNOWN"]
 badge = " · ".join(f"{emoji.get(s, '•')} {s}: {counts[s]}"
                    for s in order if s in counts)
 out.append(f"{total} package(s) — {badge}")
@@ -157,7 +170,28 @@ for res in "${RESULTS_DIR}"/*.txt; do
     fi
 done
 
-# ci.sh itself always exits 0: a downstream test failure is data we want to
-# report (and still upload artifacts for), not an infrastructure error. The
-# workflow can inspect the `failed` output to decide whether to flag the run.
+# ── Exit code ────────────────────────────────────────────────────────────────
+# Everything above (summary, step summary, artifacts, failing-log tails) has
+# already been written, so failing here still leaves a full report behind.
+#
+# The harness curates a green baseline: deselects for known-bad downstream tests
+# live in the manifest, with the reason recorded next to them. So anything other
+# than PASS is a regression to look at, and the gate says so by exiting non-zero.
+# FAIL_ON_REGRESSION=0 restores the old report-only behaviour.
+not_passed=0
+for res in "${RESULTS_DIR}"/*.txt; do
+    [[ -e "${res}" ]] || continue
+    [[ "$(basename "${res}")" == "summary.txt" ]] && continue
+    status="$(awk -F= '/^status=/ {print $2}' "${res}")"
+    [[ "${status}" == "PASS" ]] || not_passed=$((not_passed + 1))
+done
+
+if [[ "${not_passed}" -gt 0 ]]; then
+    echo ""
+    echo "${not_passed} package(s) did not pass against ${TORNADO_SPEC}."
+    if [[ "${FAIL_ON_REGRESSION}" == "1" ]]; then
+        exit 1
+    fi
+    echo "FAIL_ON_REGRESSION=0, reporting only."
+fi
 exit 0
