@@ -1,0 +1,37 @@
+# Dependabot owns the downstream version pins.
+#
+# Each packages/<name>/requirements.txt holds exactly one `name==version`, so a
+# bump is one small, reviewable pull request. The git tag the harness checks out
+# is derived from that version via tag_template in package.env, which is why the
+# version is the only thing that needs managing here.
+#
+# .github/workflows/pins.yml runs the affected package on each of these pull
+# requests, so a bump that needs its deselects re-curated says so on its own PR
+# rather than during a release build.
+version: 2
+updates:
+  # One entry per packages/<name>/ directory. Separate directories (rather than
+  # one shared requirements file) are deliberate: dependabot would otherwise
+  # have to resolve streamlit, distributed and jupyterhub into a single
+  # environment, which cannot succeed.
+  - package-ecosystem: "pip"
+    directories:
+      - "/packages/*"
+    schedule:
+      interval: "weekly"
+    # Ten packages, so the default of 5 would starve some of them.
+    open-pull-requests-limit: 12
+    commit-message:
+      prefix: "pins"
+    labels:
+      - "dependencies"
+      - "downstream-pin"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "actions"
+    labels:
+      - "dependencies"

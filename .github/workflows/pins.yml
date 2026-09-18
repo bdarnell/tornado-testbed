@@ -1,0 +1,56 @@
+# Validate a downstream version pin bump by running the package it changed.
+#
+# Dependabot opens one pull request per packages/<name>/requirements.txt. This
+# runs that package against the latest stable Tornado, so a bump that needs its
+# deselects re-curated -- or whose derived git tag does not exist -- says so on
+# its own pull request instead of surfacing during a release build.
+name: pins
+
+on:
+  pull_request:
+    paths:
+      - "packages/**"
+
+permissions: {}
+
+jobs:
+  affected:
+    name: Find affected packages
+    runs-on: ubuntu-24.04
+    outputs:
+      packages: ${{ steps.changed.outputs.packages }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          # Needed to diff against the base branch.
+          fetch-depth: 0
+
+      - name: Confirm every derived tag resolves
+        run: python3 scripts/validate_packages.py --check-refs
+
+      - name: Diff against the base branch
+        id: changed
+        env:
+          BASE: ${{ github.base_ref }}
+        run: |
+          git fetch --depth=1 origin "${BASE}"
+          packages="$(./scripts/changed_packages.sh "origin/${BASE}")"
+          echo "packages=${packages}" >> "$GITHUB_OUTPUT"
+          echo "Affected: ${packages:-<none>}"
+
+  test:
+    name: Test affected packages
+    needs: affected
+    if: needs.affected.outputs.packages != ''
+    # zizmor suggests the newer `$/...` spelling. Sticking with the documented
+    # `./...` form: this is release infrastructure and the older syntax is the
+    # one with a long track record.
+    uses: ./.github/workflows/testbed.yml # zizmor: ignore[self-repository]
+    with:
+      packages: ${{ needs.affected.outputs.packages }}
+      # Latest stable release: a pin bump should be judged against the Tornado
+      # people are actually running, not against master.
+      tornado_spec: "tornado"
+    permissions:
+      contents: read
