@@ -1,0 +1,49 @@
+diff --git a/.github/workflows/build.yml b/.github/workflows/build.yml
+index af03126..7851fbc 100644
+--- a/.github/workflows/build.yml
++++ b/.github/workflows/build.yml
+@@ -103,6 +103,29 @@ jobs:
+           name: artifacts-${{ matrix.os }}${{ matrix.name_suffix || '' }}
+           path: ./wheelhouse/*.whl
+ 
++  downstream:
++    name: Downstream testbed
++    needs: [build_wheels, build_sdist]
++    # Only meaningful on the canonical repo; forks have no reason to spend an
++    # hour of CI on downstream suites.
++    if: github.repository == 'tornadoweb/tornado'
++    # Runs the test suites of the ten most popular packages that depend on
++    # tornado against the wheel this run just built. Because a called workflow
++    # shares this run, the testbed downloads that artifact directly rather than
++    # re-resolving a git ref -- so what the downstream suites import is exactly
++    # what we are about to publish.
++    #
++    # Deliberately NOT in upload_pypi's `needs`: this is a signal to read before
++    # pushing a tag, not a gate that a flaky downstream suite can use to wedge a
++    # release. build.yml already runs on release-branch pushes, which is the
++    # point at which there is still time to act on it.
++    uses: tornadoweb/tornado-testbed/.github/workflows/testbed.yml@main
++    with:
++      tornado_artifact: artifacts-ubuntu-24.04
++      python_version: '3.13'
++    permissions:
++      contents: read
++
+   upload_pypi_test:
+     name: Upload to PyPI (test)
+     needs: [build_wheels, build_sdist]
+diff --git a/.github/zizmor.yml b/.github/zizmor.yml
+index 50582e4..b9958c5 100644
+--- a/.github/zizmor.yml
++++ b/.github/zizmor.yml
+@@ -10,6 +10,10 @@ rules:
+         github/*: ref-pin
+         dependabot/*: ref-pin
+         # Additional trusted repositories
++        # tornadoweb/* is our own org; the downstream testbed is referenced by
++        # branch so a release build gates on its current package pins rather
++        # than on a months-stale snapshot of them.
++        tornadoweb/*: ref-pin
+         pypa/*: ref-pin
+         astral-sh/setup-uv: ref-pin
+         docker/setup-qemu-action: ref-pin
