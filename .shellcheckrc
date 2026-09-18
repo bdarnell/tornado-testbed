@@ -1,0 +1,4 @@
+# Follow `source` directives and look for the sourced file next to the script
+# doing the sourcing, so common.sh's definitions are visible to shellcheck.
+external-sources=true
+source-path=SCRIPTDIR
