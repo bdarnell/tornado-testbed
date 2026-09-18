@@ -226,10 +226,14 @@ run_tests() {
     (cd "${work}" && timeout "${TIMEOUT_SECS}" bash -c "${test_cmd}") >>"${log}" 2>&1
 }
 
+# common.sh turns on `set -e`, so every invocation of the test command has to be
+# guarded: an unguarded `run_tests` aborts this script on the first failing
+# suite, before any result file is written, which makes a red package invisible
+# to the gate in ci.sh. `|| rc=$?` keeps the failure a value we handle.
 test_start=$(date +%s)
 attempts=1
-run_tests
-rc=$?
+rc=0
+run_tests || rc=$?
 # Retry once on timeout only. The real-kernel (ZeroMQ) suites deadlock
 # intermittently in a poll that ignores SIGALRM and SIGTERM (see REPORT.md), so
 # a timeout is the one status worth a second look. A genuine failure is not
@@ -239,8 +243,8 @@ if [[ "${rc}" -eq 124 && "${RETRY_TIMEOUT}" == "1" ]]; then
     echo "" | tee -a "${log}"
     echo "--- timed out after ${TIMEOUT_SECS}s; retrying once ---" | tee -a "${log}"
     attempts=2
-    run_tests
-    rc=$?
+    rc=0
+    run_tests || rc=$?
 fi
 test_end=$(date +%s)
 test_secs=$((test_end - test_start))
