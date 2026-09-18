@@ -1,6 +1,13 @@
-# Self-test workflow for tornado-testbed. Lets us exercise the harness in CI
-# (against a chosen Tornado branch/tag/SHA) without touching the tornado repo.
-# All real logic lives in scripts/ci.sh — keep this file thin.
+# Run the downstream test suites against a chosen Tornado build.
+#
+# Three ways in:
+#   workflow_dispatch  run it by hand from the Actions tab
+#   workflow_call      call it from another repository -- this is how tornado's
+#                      own release build gates on the testbed
+#   schedule           weekly, against tornado master, to keep the curated
+#                      green baseline honest between releases
+#
+# All the real logic lives in scripts/ -- keep this file thin.
 name: testbed
 
 on:
@@ -8,31 +15,249 @@ on:
     inputs:
       tornado_spec:
         description: "What to install tornado from (any `uv pip install` spec: a git+URL to a branch/fork, a version pin, a wheel, ...)"
+        type: string
         required: false
         default: "git+https://github.com/tornadoweb/tornado.git@master"
+      packages:
+        description: "Space-separated package names or ranks to run (default: all)"
+        type: string
+        required: false
+        default: ""
+      python_version:
+        description: "Python for the per-package venvs"
+        type: string
+        required: false
+        default: "3.13"
+      coverage:
+        description: "Measure Tornado coverage and upload the raw data"
+        type: boolean
+        required: false
+        default: false
+      fail_on_regression:
+        description: "Fail the run unless every package passes"
+        type: boolean
+        required: false
+        default: true
+
+  workflow_call:
+    inputs:
+      tornado_spec:
+        description: "What to install tornado from. Ignored when tornado_artifact is set."
+        type: string
+        required: false
+        default: "git+https://github.com/tornadoweb/tornado.git@master"
+      tornado_artifact:
+        description: >-
+          Name of an artifact in the CALLING workflow run holding a tornado
+          wheel and/or sdist. A called workflow shares the caller's run, so this
+          tests the exact artifact that run built rather than a re-resolved git
+          ref. Takes precedence over tornado_spec, and the version it names is
+          asserted against the version that ends up installed.
+        type: string
+        required: false
+        default: ""
+      packages:
+        type: string
+        required: false
+        default: ""
+      python_version:
+        type: string
+        required: false
+        default: "3.13"
+      coverage:
+        type: boolean
+        required: false
+        default: false
+      fail_on_regression:
+        type: boolean
+        required: false
+        default: true
+      timeout_secs:
+        description: "Per-package wall-clock limit passed to timeout(1)"
+        type: string
+        required: false
+        default: "900"
+    outputs:
+      total:
+        description: "Number of packages run"
+        value: ${{ jobs.report.outputs.total }}
+      passed:
+        description: "Number that passed"
+        value: ${{ jobs.report.outputs.passed }}
+      failed:
+        description: "Number that did not pass"
+        value: ${{ jobs.report.outputs.failed }}
+
+  schedule:
+    # Weekly. Without this, a release run is where we would discover that
+    # downstream drift has broken the baseline -- which is how gates get
+    # ignored.
+    - cron: "17 6 * * 1"
+
+permissions: {}
 
 jobs:
-  run:
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
+  # Resolve the run's settings once (the three triggers supply them
+  # differently, and `schedule` supplies none) and expand the package list.
+  plan:
+    name: Plan
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      tornado_spec: ${{ steps.cfg.outputs.tornado_spec }}
+      tornado_artifact: ${{ steps.cfg.outputs.tornado_artifact }}
+      python_version: ${{ steps.cfg.outputs.python_version }}
+      coverage: ${{ steps.cfg.outputs.coverage }}
+      fail_on_regression: ${{ steps.cfg.outputs.fail_on_regression }}
+      timeout_secs: ${{ steps.cfg.outputs.timeout_secs }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
-      - uses: astral-sh/setup-uv@v5
+      - name: Validate package definitions
+        run: python3 scripts/validate_packages.py
 
-      - name: Run testbed
-        id: testbed
+      - name: Resolve settings
+        id: cfg
         env:
-          TORNADO_SPEC: "${{ inputs.tornado_spec }}"
-        run: ./scripts/ci.sh
+          IN_TORNADO_SPEC: ${{ inputs.tornado_spec }}
+          IN_TORNADO_ARTIFACT: ${{ inputs.tornado_artifact }}
+          IN_PYTHON_VERSION: ${{ inputs.python_version }}
+          IN_COVERAGE: ${{ inputs.coverage }}
+          IN_FAIL_ON_REGRESSION: ${{ inputs.fail_on_regression }}
+          IN_TIMEOUT_SECS: ${{ inputs.timeout_secs }}
+        run: |
+          # `schedule` runs have no inputs at all, so every value needs a
+          # fallback here rather than only in the `on:` block.
+          {
+            echo "tornado_spec=${IN_TORNADO_SPEC:-git+https://github.com/tornadoweb/tornado.git@master}"
+            echo "tornado_artifact=${IN_TORNADO_ARTIFACT:-}"
+            echo "python_version=${IN_PYTHON_VERSION:-3.13}"
+            echo "coverage=$([[ "${IN_COVERAGE}" == "true" ]] && echo 1 || echo 0)"
+            echo "fail_on_regression=$([[ "${IN_FAIL_ON_REGRESSION}" == "false" ]] && echo 0 || echo 1)"
+            echo "timeout_secs=${IN_TIMEOUT_SECS:-900}"
+          } >> "$GITHUB_OUTPUT"
 
-      - name: Upload results
+      - name: Expand package list
+        id: plan
+        env:
+          PACKAGES: ${{ inputs.packages }}
+        run: |
+          matrix="$(python3 scripts/pkglib.py matrix "${PACKAGES:-}")"
+          echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
+          echo "Running: ${matrix}"
+
+  # One job per package. fail-fast is off so one red package does not hide the
+  # others, each package gets its own timeout instead of sharing one budget, and
+  # a single flaky package can be re-run from the Actions UI.
+  run:
+    name: ${{ matrix.package }}
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJson(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@v7
+
+      - name: Download tornado artifact
+        if: needs.plan.outputs.tornado_artifact != ''
+        uses: actions/download-artifact@v7
+        with:
+          name: ${{ needs.plan.outputs.tornado_artifact }}
+          path: tornado-artifact
+
+      - name: Resolve the tornado under test
+        env:
+          ARTIFACT: ${{ needs.plan.outputs.tornado_artifact }}
+          SPEC: ${{ needs.plan.outputs.tornado_spec }}
+        run: |
+          if [[ -n "${ARTIFACT}" ]]; then
+            # Fails loudly if the artifact holds no wheel or sdist: falling back
+            # to PyPI's tornado would make the run meaningless.
+            ./scripts/resolve_tornado_artifact.sh tornado-artifact >> "$GITHUB_ENV"
+          else
+            echo "TORNADO_SPEC=${SPEC}" >> "$GITHUB_ENV"
+          fi
+
+      # matrix.package goes through the environment rather than being expanded
+      # into the shell command, so the run block holds no template expansion.
+      - name: Check out ${{ matrix.package }}
+        env:
+          PACKAGE: ${{ matrix.package }}
+        run: ./scripts/setup.sh "${PACKAGE}"
+
+      - name: Run ${{ matrix.package }}
+        env:
+          PACKAGE: ${{ matrix.package }}
+          PYTHON_VERSION: ${{ needs.plan.outputs.python_version }}
+          COVERAGE: ${{ needs.plan.outputs.coverage }}
+          TIMEOUT_SECS: ${{ needs.plan.outputs.timeout_secs }}
+        # run_one.sh exits with the package's own status code. The report job
+        # decides what that means for the run as a whole, so a red package must
+        # not fail this job before its result is uploaded.
+        run: ./scripts/run_one.sh "${PACKAGE}" || true
+
+      - name: Upload result
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
+        with:
+          name: result-${{ matrix.package }}
+          path: |
+            results/${{ matrix.package }}.txt
+            logs/${{ matrix.package }}.log
+          if-no-files-found: warn
+
+      - name: Upload raw coverage data
+        if: always() && needs.plan.outputs.coverage == '1'
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-${{ matrix.package }}
+          path: coverage/${{ matrix.package }}.coverage
+          if-no-files-found: ignore
+
+  report:
+    name: Report
+    needs: [plan, run]
+    if: always()
+    runs-on: ubuntu-24.04
+    outputs:
+      total: ${{ steps.report.outputs.total }}
+      passed: ${{ steps.report.outputs.passed }}
+      failed: ${{ steps.report.outputs.failed }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Collect per-package results
+        uses: actions/download-artifact@v7
+        with:
+          pattern: result-*
+          path: collected
+          merge-multiple: true
+
+      - name: Report
+        id: report
+        env:
+          TORNADO_SPEC: ${{ needs.plan.outputs.tornado_spec }}
+          FAIL_ON_REGRESSION: ${{ needs.plan.outputs.fail_on_regression }}
+          # The downloaded artifacts keep their results/ and logs/ prefixes.
+          RESULTS_DIR: ${{ github.workspace }}/collected/results
+          LOGS_DIR: ${{ github.workspace }}/collected/logs
+        run: ./scripts/report.sh
+
+      - name: Upload combined results
+        if: always()
+        uses: actions/upload-artifact@v7
         with:
           name: testbed-results
-          path: |
-            logs/
-            results/
-            coverage_html/
+          path: collected/
           if-no-files-found: warn
