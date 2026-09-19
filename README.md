@@ -2,94 +2,90 @@
 
 A reproducible harness for running the test suites of the most popular
 open-source Python packages that depend on [Tornado](https://github.com/tornadoweb/tornado).
-The goal is to give Tornado maintainers a way to sanity-check a candidate
-release against real downstream consumers.
+It gives Tornado maintainers a way to check a candidate release against real
+downstream consumers before shipping it.
 
 ## Layout
 
 ```
-packages.json          # manifest: top 10 dependents, pinned refs, test commands
+packages/<name>/       package definitions: pin, metadata, test script, notes
+                       (see packages/README.md)
 scripts/
-  common.sh            # shared helpers (reads packages.json)
-  setup.sh             # clone each package at its pinned ref
-  run_one.sh           # build an isolated uv venv and run one package's tests
-  run_all.sh           # iterate run_one.sh over every package, summarise
-  summarize.sh         # rebuild results/summary.txt from results/<name>.txt
-  gen_reports.sh       # rebuild coverage_html/ from coverage/<name>.coverage
-packages/              # populated by setup.sh (one git checkout per package)
-logs/<name>.log        # full stdout+stderr for each package run
-results/<name>.txt     # key=value summary for each package run
-results/summary.txt    # overall table
-coverage_html/         # committed HTML coverage reports (per package + merged)
-REPORT.md              # current state of the harness
-notes/                 # dated per-session history (see notes/README.md)
+  pkglib.py            reads and validates the packages/ definitions
+  common.sh            shared paths and helpers
+  setup.sh             clone downstream sources at their pinned refs
+  run_one.sh           build an isolated uv venv and run one package's tests
+  run_all.sh           iterate run_one.sh over every package, summarise
+  summarize.sh         rebuild results/summary.txt from results/<name>.txt
+  gen_reports.sh       build coverage_html/ from coverage/<name>.coverage
+  ci.sh                single entry point for automated runs
+checkouts/<name>/      cloned downstream sources (generated)
+logs/<name>.log        full stdout+stderr for each package run
+results/<name>.txt     key=value summary for each package run
+coverage_html/         coverage reports, built on demand
+REPORT.md              current state of the harness
 ```
 
 ## Prerequisites
 
-- `uv` (for per-package isolated Python 3.11 venvs)
-- `git`
-- POSIX shell + `python3` (used to parse the JSON manifest)
+- `uv` (for per-package isolated venvs)
+- `git`, and a POSIX shell with `python3`
+- `node`/`npm` on PATH — jupyterhub's live-server tests need
+  `configurable-http-proxy`
 
-Docker is not required; each package is isolated via its own `uv` venv.
-The manifest is the only place you need to edit to add/remove a package
-or change its pinned ref or test command.
+Docker is not required; each package is isolated in its own `uv` venv.
 
 ## Usage
 
 ```bash
-# 1. Clone every dependent package at its pinned ref
+# Clone the downstream sources (all, or just some)
 ./scripts/setup.sh
+./scripts/setup.sh flower bokeh
 
-# 2a. Run everything
+# Run everything, or one package by name or rank
 ./scripts/run_all.sh
-
-# 2b. Or run a single package, by name or index
 ./scripts/run_one.sh flower
-./scripts/run_one.sh 6
+./scripts/run_one.sh 7
 
-# Test against a specific Tornado build/wheel:
-TORNADO_SPEC="tornado==6.5.1" ./scripts/run_one.sh flower
-TORNADO_SPEC="/path/to/tornado-7.0.0.dev0-py3-none-any.whl" ./scripts/run_all.sh
+# Test against a specific Tornado build
+TORNADO_SPEC="tornado==6.5.1"                      ./scripts/run_one.sh flower
+TORNADO_SPEC="/path/to/tornado-7.0.0-py3-none-any.whl" ./scripts/run_all.sh
 ```
 
-`TORNADO_SPEC` accepts anything `uv pip install` does (a version pin, a local
-wheel, a VCS URL, etc.), so pointing the harness at a pre-release build is
-one env var away.
+`TORNADO_SPEC` accepts anything `uv pip install` does — a version pin, a local
+wheel, a VCS URL — so pointing the harness at a pre-release build is one env var
+away. It is force-installed after the downstream package, and the run **fails**
+rather than falling back if it cannot be installed or if anything later changes
+the Tornado in the environment: a green run has to mean the requested Tornado
+passed.
 
-## Running in CI / GitHub Actions
+Other knobs: `TIMEOUT_SECS` (default 900, per package), `PYTHON_VERSION`
+(default 3.11), `COVERAGE=0` to skip coverage measurement, `RETRY_TIMEOUT=0` to
+disable the single retry on timeout.
 
-`scripts/ci.sh` is the single entry point for automated runs. It chains
-`setup.sh` → `run_all.sh` → `gen_reports.sh`, then prints a markdown summary to
-stdout and `$GITHUB_STEP_SUMMARY` and exposes `total`/`passed`/`failed` via
-`$GITHUB_OUTPUT`. Unlike a local run it commits nothing — results are meant to
-be read from the build log and downloaded from the uploaded `logs/`,
-`results/`, and `coverage_html/` artifacts.
+## Running in CI
+
+`scripts/ci.sh` is the entry point for automated runs. It chains
+`setup.sh` → `run_all.sh` → `gen_reports.sh`, prints a markdown summary to
+stdout and `$GITHUB_STEP_SUMMARY`, exposes `total`/`passed`/`failed` via
+`$GITHUB_OUTPUT`, and **exits non-zero unless every package passed** so it can
+be used as a release gate. Set `FAIL_ON_REGRESSION=0` for a report-only run.
 
 ```bash
 TORNADO_SPEC="git+https://github.com/tornadoweb/tornado.git@my-branch" ./scripts/ci.sh
-ONLY="flower bokeh" ./scripts/ci.sh   # restrict to specific packages
+ONLY="flower bokeh" ./scripts/ci.sh    # restrict to specific packages
 ```
 
-`.github/workflows/testbed.yml` is the thin workflow that drives it: run it from
-the Actions tab and give it a `tornado_spec` input — anything `uv pip install`
-accepts (a `git+`URL to a branch or fork, a version pin, a wheel, ...), defaulting
-to tornado's `master`. The job runs `scripts/ci.sh` and uploads `logs/`,
-`results/`, and `coverage_html/` as the `testbed-results` artifact; nothing is
-committed back.
+It commits nothing: results are read from the build log and the uploaded
+`logs/`, `results/` and `coverage_html/` artifacts.
 
-## Selection criteria
+`.github/workflows/testbed.yml` drives it. Run it from the Actions tab with a
+`tornado_spec` input, or call it as a reusable workflow from another repository
+— which is how tornado's own release build uses it.
 
-The ten packages were picked to maximise ecosystem coverage: popular (by
-GitHub stars / PyPI downloads) AND declaring `tornado` directly in their
-install requirements. See `packages.json` for the full list plus the
-rationale and test command for each.
+## Adding or changing a package
 
-## Skipping policy
-
-The task description permits skipping packages whose test suite is
-exceptionally hard to run. For each such package we shrink `test_cmd` in
-`packages.json` to a focused module or two that exercises the Tornado
-integration points without pulling in a JS toolchain, Selenium, Playwright,
-a database, or other heavyweight fixtures. The comment in each manifest
-entry records which tests were dropped and why.
+Everything about a package lives in its own directory under `packages/`; see
+[`packages/README.md`](packages/README.md). Version pins are managed by
+dependabot, which opens a pull request per bump; the `pins` workflow runs the
+affected package so a bump that needs attention says so on its own PR.

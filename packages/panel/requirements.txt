@@ -1,0 +1,3 @@
+# The downstream release under test. Dependabot updates this file; the
+# git tag is derived from it via tag_template in package.env.
+panel==1.9.4

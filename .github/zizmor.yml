@@ -1,0 +1,15 @@
+# Mirrors tornadoweb/tornado's own zizmor policy, since this repo is called from
+# tornado's release build and should hold itself to the same standard.
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        # Trusted publishers may be referenced by tag rather than by hash.
+        #
+        # Defaults, from
+        # https://github.com/woodruffw/zizmor/blob/7b4e76e94be2f4d7b455664ba5252b2b4458b91d/src/audit/unpinned_uses.rs#L172-L193
+        actions/*: ref-pin
+        github/*: ref-pin
+        dependabot/*: ref-pin
+        # Additional trusted repositories
+        astral-sh/setup-uv: ref-pin

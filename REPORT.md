@@ -1,117 +1,179 @@
 # Downstream Tornado Test-Suite Report
 
-A snapshot of the **current state** of the harness: the 10 most popular Python
-packages that depend on Tornado, each run in its own `uv`-managed Python 3.11
+A snapshot of the **current state** of the harness: the most popular Python
+packages that depend on Tornado, each run in its own `uv`-managed Python 3.13
 virtualenv against a chosen `TORNADO_SPEC`. Every run installs the package's
 pinned version (from source, or the PyPI wheel where the source build needs a
-JS toolchain or network assets), then forcibly upgrades `tornado` to the spec.
+JS toolchain or network assets), then forcibly upgrades `tornado` to the spec
+and verifies that is what actually ends up imported.
 
-> Per-session history — what changed when and why, with before/after numbers —
-> lives in [`notes/`](notes/). This file describes how things stand now.
+> This file describes how things stand now. Per-package detail — what each one
+> exercises and why its suite is shaped that way — lives in each
+> [`packages/<name>/README.md`](packages/).
 
-## Current results (tornado 6.5.5)
+## Current results (tornado 6.5.10, Python 3.13)
 
-| #  | Package        | GitHub ref | Tests run                  | Status | Time |
-|----|----------------|------------|----------------------------|--------|------|
-| 1  | streamlit      | 1.40.0     | 50 passed                  | PASS   | 7s   |
-| 2  | bokeh          | 3.6.1      | 16 passed                  | PASS   | 6s   |
-| 3  | jupyter_server | v2.14.2    | 970 passed, 17 skipped     | PASS   | 228s |
-| 4  | notebook       | v7.2.2     | 6 passed                   | PASS   | 7s   |
-| 5  | jupyterhub     | 5.2.1      | 194 passed                 | PASS   | 156s |
-| 6  | distributed    | 2024.10.0  | 21 passed                  | PASS   | 4s   |
-| 7  | flower         | v2.0.1     | 162 passed, 2 skipped      | PASS   | 6s   |
-| 8  | ipykernel      | v6.29.5    | 140 passed, 20 skipped     | PASS   | 68s  |
-| 9  | panel          | v1.5.3     | 40 passed, 2 skipped       | PASS   | 10s  |
-| 10 | voila          | v0.5.8     | 2 passed                   | PASS   | 10s  |
+| # | Package        | Ref        | Tests run                | Status | Time |
+|---|----------------|------------|--------------------------|--------|------|
+| 1 | bokeh          | 3.10.0     | 24 passed                | PASS   | 6s   |
+| 2 | jupyter_server | v2.21.1    | 1136 passed, 34 skipped  | PASS   | 297s |
+| 3 | notebook       | v7.6.2     | 6 passed                 | PASS   | 7s   |
+| 4 | jupyterhub     | 6.0.1      | 213 passed               | PASS   | 158s |
+| 5 | distributed    | 2026.8.0   | 21 passed                | PASS   | 5s   |
+| 6 | flower         | v2.1.0     | 251 passed, 2 skipped    | PASS   | 6s   |
+| 7 | ipykernel      | v7.3.0     | 181 passed, 26 skipped   | PASS   | 90s  |
+| 8 | panel          | v1.9.4     | 49 passed, 2 skipped     | PASS   | 11s  |
+| 9 | voila          | v0.5.13    | 2 passed                 | PASS   | 10s  |
 
-**10/10 green.** Full output is in `logs/<package>.log`; machine-readable
-results in `results/<package>.txt`; the table is reproducible with
+**9/9 green.** Full output is in `logs/<package>.log`; machine-readable results
+in `results/<package>.txt`; the table is reproducible with
 `scripts/summarize.sh`.
 
 The jupyter_server / jupyterhub / ipykernel suites drive **real Tornado test
 servers** (live `ServerApp`s, a real MockHub + `configurable-http-proxy`, real
-IPython kernels over ZeroMQ); the others run focused server-layer subsets. Each
-package's `notes` field in `packages.json` records exactly what it exercises and
-why its `test_cmd` is shaped the way it is.
+IPython kernels over ZeroMQ); the others run focused server-layer subsets.
+
+## How this is used
+
+`scripts/ci.sh` and `.github/workflows/testbed.yml` both **exit non-zero unless
+every package passes**, so this can gate a release. `FAIL_ON_REGRESSION=0` gives
+the old report-only behaviour.
+
+tornado's own `build.yml` calls `testbed.yml` as a reusable workflow on pushes
+to release branches and on `v*` tags. Because a called workflow shares the
+caller's run, the testbed installs the **exact wheel that run built** and
+asserts its version is the one imported — see [`integration/`](integration/) for
+the tornado-side patch and its reasoning.
+
+The workflow runs packages as a job matrix (one per package, `fail-fast: false`)
+and runs weekly against `master`, so drift surfaces between releases rather than
+during one.
+
+## Does the gate actually catch anything?
+
+Yes, demonstrably — at jupyter_server 2.14.2 the harness caught
+[tornado#3724](https://github.com/tornadoweb/tornado/issues/3724)
+(`StaticFileHandler.allowed_symlink_directory` was set only in `initialize()`,
+so subclasses replacing `initialize()` raised `AttributeError` on every
+static-file request). Four tests failed on 6.5.9 and passed on 6.5.8 and 6.5.10.
+
+**The current pin no longer trips it**: jupyter_server 2.21.1 changed
+`FileFindHandler` enough that all four pass on 6.5.9. That is the cost of
+tracking current downstream code, and it is the right trade — but it means a
+green run is not by itself evidence the gate works.
+[`packages/jupyter_server/README.md`](packages/jupyter_server/README.md) has the
+replay procedure for getting that evidence back on demand.
 
 ## Coverage
 
-HTML reports are in `coverage_html/<package>/` (per package) and
-`coverage_html/merged/` (union, path-remapped to one canonical Tornado);
-rebuild with `scripts/gen_reports.sh`. Merged Tornado coverage is **~61%**.
+Measured on the **weekly scheduled run** and on **pin-update pull requests**,
+and left off elsewhere: the release gate's job is pass/fail, and `pytest-cov`
+overhead buys it nothing. A manual dispatch can turn it on with the `coverage`
+input.
+
+HTML reports are built on demand and never committed. `scripts/gen_reports.sh`
+writes `coverage_html/<package>/` and `coverage_html/merged/` (union,
+path-remapped to one canonical Tornado), and CI uploads them as the
+`coverage-html` artifact. It works with or without the per-package venvs: every
+package records coverage against its own venv's copy of Tornado, and a `[paths]`
+remap collapses those onto one canonical installation, which is also what lets
+the job matrix render reports from nothing but the uploaded `.coverage` files.
+
+### Coverage floors
+
+Each package declares a `min_coverage` in its `package.env`. When a run
+measures coverage, a package that comes in under its floor fails as
+`COVERAGE_LOW` — even though its tests passed.
+
+This catches the failure that no other signal here would: a new downstream
+release moves or renames the files a `test.sh` names, the command keeps exiting
+0, and it exercises almost none of Tornado. Everything looks green while the
+package has quietly stopped testing anything. Arming this on pin-update PRs is
+the point — that is exactly when it happens.
+
+Floors sit roughly 20% under the measured value, so ordinary drift does not trip
+them. They are only useful while they track reality, so the report flags any
+package running well clear of its own floor.
 
 | Package        | tornado coverage |
 |----------------|:----------------:|
-| streamlit      | 45% |
 | bokeh          | 39% |
 | jupyter_server | 42% |
-| notebook       | 23% |
-| jupyterhub     | 42% |
+| notebook       | 22% |
+| jupyterhub     | 36% |
 | distributed    |  9% |
 | flower         | 43% |
 | ipykernel      |  7% |
 | panel          | 31% |
 | voila          | 20% |
-| **merged**     | **61%** |
+| **merged**     | **59%** |
 
 (ipykernel and distributed look low because they use only narrow slices of
 Tornado — async primitives / the asyncio bridge, and the bare TCP layer,
-respectively — but cover those slices well; see their `packages.json` notes.)
+respectively — but cover those slices well; see their
+`packages/<name>/README.md`.)
+
+Merged coverage was 61% when streamlit was still in the set. Dropping it cost
+only two points despite it being the single highest-coverage package (45%),
+because the other web-layer packages already covered most of the same ground.
 
 ## Standing limitations & decisions
 
 These are current facts about the harness, not one-off history — keep them in
 mind before assuming a number can simply be pushed up.
 
+- **streamlit is gone.** It moved to Starlette/uvicorn in 1.57.0 and no longer
+  depends on Tornado at all, so it failed the testbed's first selection
+  criterion. The set is nine packages until a replacement is selected. See
+  [`packages/README.md`](packages/README.md).
+
 - **`tornado.auth` is stuck at ~18%.** Flower is the *only* package here that
-  imports `tornado.auth`, and its existing suite (run in full) only exercises
-  the `authenticate` / `validate_auth_option` helpers and HTTP Basic auth — it
-  never drives the OAuth2 login handlers
-  (`GoogleOAuth2Mixin.get_authenticated_user`, `authorize_redirect`,
-  `oauth2_request`), which is where most of `auth.py` lives. Moving this number
-  requires *new* OAuth-flow tests, not just running more of what exists.
+  imports `tornado.auth`, and its suite only exercises the `authenticate` /
+  `validate_auth_option` helpers and HTTP Basic auth — it never drives the
+  OAuth2 login handlers (`GoogleOAuth2Mixin.get_authenticated_user`,
+  `authorize_redirect`, `oauth2_request`), which is where most of `auth.py`
+  lives. Moving this number requires *new* OAuth-flow tests, not just running
+  more of what exists.
 
 - **voila runs only `utils_test.py` (~20%) on purpose.** Its `tests/app` /
   `tests/server` suites drive real Tornado servers and would lift coverage to
   ~30% (websocket 63%), but the cold-start kernel-WebSocket tests deadlock
   intermittently in a ZeroMQ poll that ignores both `pytest-timeout`'s SIGALRM
-  and a plain SIGTERM — i.e. they can hang the whole run. To opt in manually:
-  install `pytest-tornasync pytest-timeout ipykernel` alongside the wheel and
-  run `tests/app tests/server` under `timeout -s KILL 600`, deselecting the
-  custom-template / papermill / xeus-C++ feature tests (see the voila note in
-  `packages.json`).
+  and a plain SIGTERM — i.e. they can hang the whole run. See
+  `packages/voila/README.md` to opt in by hand.
 
 - **System prerequisites for the live-server suites:** **node/npm** must be on
   PATH so jupyterhub can install/run `configurable-http-proxy`.
 
-## How to re-use the harness
+- **Build-time dependencies are pinned** in `build-constraints.txt`. Packages do
+  not pin their own build backends, so a backend release can stop a downstream
+  pin from building at all — which looks like a testbed failure and says nothing
+  about Tornado.
 
-```bash
-./scripts/setup.sh                         # clone all packages
-./scripts/run_all.sh                       # run everything
-./scripts/run_one.sh <name-or-index>       # run one
-./scripts/summarize.sh                     # refresh results/summary.txt
-./scripts/gen_reports.sh                   # rebuild coverage_html/
-
-# Point it at any Tornado build:
-TORNADO_SPEC="tornado==6.5.0"          ./scripts/run_all.sh
-TORNADO_SPEC="tornado==7.0.0.dev1"     ./scripts/run_all.sh
-TORNADO_SPEC="/abs/path/to/wheel.whl"  ./scripts/run_one.sh bokeh
-```
-
-Each call to `run_one.sh` builds a fresh per-package venv, so there is no state
-carried between packages.
+- **Coverage numbers in the table above are hand-updated.** The weekly run
+  produces a `coverage-html` artifact, but nothing writes back into this file.
+  Publishing the report somewhere linkable, so this table can stop being a
+  transcription, is an open follow-up.
 
 ## Gotchas worth knowing if you extend the harness
 
+- **`scripts/common.sh` enables `set -e`.** Guard any command whose non-zero
+  exit you intend to handle (`run_tests || rc=$?`). An unguarded failure aborts
+  before the result file is written, which makes a red package invisible to the
+  gate rather than merely red.
 - **`uv venv` has no `pip`** — test commands that shell out to `pip` must use
   `uv pip`.
 - **setuptools_scm / hatch-vcs packages** (bokeh, distributed) want full tags;
   `setup.sh` fetches them.
-- **Project-level `filterwarnings=error`** (the whole Jupyter stack) turns
-  benign downstream warnings into failures. Prefer a *targeted*
+- **Project-level `filterwarnings=error`** (the whole Jupyter stack, and panel)
+  turns benign downstream warnings into failures. Prefer a *targeted*
   `-W ignore::Specific.Warning` over fighting the global filter or shrinking the
-  test target.
+  test target. panel needed `pytest-xdist` installed purely so that its
+  `pytest.mark.xdist_group` is a registered mark rather than a warning.
+- **A missing optional dependency can look like a broken test.** flower's broker
+  tests failed with `NameError: name 'Retry' is not defined` because
+  `broker.py` imports it inside a `try/except ImportError` and `redis` was not
+  installed. Installing the dependency beat deselecting 22 tests.
 - **`relative_files=true`** in a project's coverage config yields relative paths
   that break standalone `coverage html` (the report shows 0%); pass
   `--cov-config=/dev/null` to force absolute paths.
@@ -120,16 +182,20 @@ carried between packages.
   passes; `-p no:unraisableexception` disables just that sweep.
 - **Real-kernel (ZeroMQ) tests can deadlock** in a way that ignores SIGALRM and
   SIGTERM; wrap them in `timeout -s KILL` if you must run them unattended, and
-  expect intermittency.
+  expect intermittency. `run_one.sh` retries once on `TIMEOUT` for this reason,
+  and only on `TIMEOUT`.
 - **Orphaned test processes** from killed runs (voila kernels especially) pile
   up and contend for CPU — `pgrep -f pytest` before trusting timing.
-- **Dependency drift shows up as a permanent red run**, which hides the
-  Tornado regressions the harness exists to find. jupyter_server's
-  `tests/test_utils.py::test_check_version` is the current example: it passes a
-  float to `packaging.Version`, which newer `packaging` rejects with
-  `InvalidVersion` instead of the `TypeError` the code catches — red on every
-  Tornado version. Deselect this kind of failure (with the reason in the
-  package's `notes`) so that a red package means a Tornado regression.
-
-- **Protobuf codegen** for streamlit is a hard prereq; the manifest's
-  `setup_extra` hook runs `protoc` for that one package.
+- **Dependency drift shows up as a permanent red run**, which hides the Tornado
+  regressions the harness exists to find. Deselect that kind of failure, with
+  the reason on the line above the deselect in the package's `test.sh`, so that
+  a red package means a Tornado regression.
+- **Drift can also break the *install*, not just the tests**, and a newer pin is
+  not always the cure: hatchling 1.32.1 broke `hatch_jupyter_builder` for every
+  version of jupyter_server and notebook at once. That is what
+  `build-constraints.txt` is for.
+- **Downstream can leave Tornado entirely.** streamlit did. Check that a package
+  still imports Tornado before debugging why its suite stopped being useful.
+- **A package needing generated code gets a `setup.sh` hook** — protobuf codegen
+  for streamlit was the original case; flower's `redis` install is the current
+  one.

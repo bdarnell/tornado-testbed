@@ -1,0 +1,22 @@
+# Constraints applied to build-time (PEP 518) dependencies only, via uv's
+# UV_BUILD_CONSTRAINT. They do not affect what the downstream package installs
+# at runtime, and they do not affect the Tornado under test.
+#
+# Build backends are not pinned by the packages that use them, so a backend
+# release can stop a two-year-old downstream pin from building at all. That
+# failure looks exactly like a testbed problem and has nothing to do with
+# Tornado, so the build environment is pinned here rather than left to float.
+#
+# Review this file when a package fails to *install* rather than fails its
+# tests: a constraint that has outlived its cause is worth removing.
+
+# hatchling 1.32.1 gave BuildHookInterface a second type parameter
+# (Generic[BuilderConfigBound, PluginManagerBound]). hatch_jupyter_builder
+# 0.9.1 -- the latest release -- still subscripts it with one, so every
+# source build in the Jupyter stack dies with
+# "TypeError: Too few arguments for BuildHookInterface; actual 1, expected 2".
+# 1.32.0 is the last release with a single type parameter.
+#
+# Affects jupyter_server, notebook, and anything else using
+# hatch-jupyter-builder. Drop this once hatch-jupyter-builder ships a fix.
+hatchling<1.32.1

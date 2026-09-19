@@ -1,0 +1,39 @@
+# Static checks on the harness itself, plus its own test suite.
+#
+# The testbed is release infrastructure for tornado, so the harness gets the
+# same treatment tornado gives its own workflows.
+name: lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions: {}
+
+jobs:
+  lint:
+    name: Lint and self-test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          # Keeps this workflow's cache key distinct from the testbed matrix's,
+          # which can be running at the same time.
+          cache-suffix: lint
+
+      - name: Validate package definitions
+        run: python3 scripts/validate_packages.py
+
+      - name: shellcheck
+        run: uvx --from shellcheck-py shellcheck scripts/*.sh packages/*/*.sh tests/*.sh
+
+      - name: zizmor
+        run: uvx zizmor .github/workflows
+
+      - name: Harness self-tests
+        run: tests/harness_test.sh

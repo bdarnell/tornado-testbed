@@ -3,16 +3,15 @@
 set -uo pipefail
 source "$(dirname "$0")/common.sh"
 
-N="$(pkg_count)"
 summary="${RESULTS_DIR}/summary.txt"
 : > "${summary}"
 
 printf "%-18s %-9s %-8s %-10s %-12s\n" "PACKAGE" "STATUS" "RC" "TORNADO" "TIME(s)" | tee -a "${summary}"
 printf "%-18s %-9s %-8s %-10s %-12s\n" "-------" "------" "--" "-------" "-------" | tee -a "${summary}"
 
-for ((i = 0; i < N; i++)); do
-    name="$(pkg_field "$i" name)"
-    bash "${ROOT_DIR}/scripts/run_one.sh" "${i}" >/dev/null 2>&1 || true
+mapfile -t names < <(pkg_names)
+for name in "${names[@]}"; do
+    bash "${ROOT_DIR}/scripts/run_one.sh" "${name}" >/dev/null 2>&1 || true
     res="${RESULTS_DIR}/${name}.txt"
     if [[ -f "${res}" ]]; then
         # Parse key=value lines without sourcing (protects against malformed files).

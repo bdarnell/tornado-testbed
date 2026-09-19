@@ -9,9 +9,8 @@ summary="${RESULTS_DIR}/summary.txt"
 printf "%-18s %-12s %-4s %-10s %-8s\n" "PACKAGE" "STATUS" "RC" "TORNADO" "TIME(s)" | tee -a "${summary}"
 printf "%-18s %-12s %-4s %-10s %-8s\n" "-------" "------" "--" "-------" "-------" | tee -a "${summary}"
 
-N="$(pkg_count)"
-for ((i = 0; i < N; i++)); do
-    name="$(pkg_field "$i" name)"
+mapfile -t names < <(pkg_names)
+for name in "${names[@]}"; do
     res="${RESULTS_DIR}/${name}.txt"
     if [[ -f "${res}" ]]; then
         package="$(awk -F= '/^package=/ {print $2}' "${res}")"
