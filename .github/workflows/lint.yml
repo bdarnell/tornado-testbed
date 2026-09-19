@@ -21,6 +21,10 @@ jobs:
           persist-credentials: false
 
       - uses: astral-sh/setup-uv@v7
+        with:
+          # Keeps this workflow's cache key distinct from the testbed matrix's,
+          # which can be running at the same time.
+          cache-suffix: lint
 
       - name: Validate package definitions
         run: python3 scripts/validate_packages.py

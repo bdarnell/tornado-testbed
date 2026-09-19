@@ -166,6 +166,18 @@ jobs:
           persist-credentials: false
 
       - uses: astral-sh/setup-uv@v7
+        with:
+          # Without a suffix every matrix job computes an identical cache key,
+          # so the nine of them race to reserve one entry and eight fail to
+          # save. The interpreter is in here too, so changing python_version
+          # does not silently reuse caches built against the old one.
+          cache-suffix: ${{ matrix.package }}-py${{ needs.plan.outputs.python_version }}
+          # The default glob matches every packages/*/requirements.txt, which
+          # would make one dependabot bump invalidate all nine caches. Key each
+          # job on its own pin plus the shared build constraints.
+          cache-dependency-glob: |
+            packages/${{ matrix.package }}/requirements.txt
+            build-constraints.txt
 
       - name: Download tornado artifact
         if: needs.plan.outputs.tornado_artifact != ''
