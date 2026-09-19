@@ -27,10 +27,26 @@ group()    { [[ -n "${GITHUB_ACTIONS:-}" ]] && echo "::group::$*" || echo "=== $
 endgroup() { [[ -n "${GITHUB_ACTIONS:-}" ]] && echo "::endgroup::" || true; }
 
 # ── Render the summary ───────────────────────────────────────────────────────
-summary_md="$(python3 - "$RESULTS_DIR" "$TORNADO_SPEC" <<'PY'
+summary_md="$(python3 - "$RESULTS_DIR" "$TORNADO_SPEC" "$ROOT_DIR" <<'PY'
 import os, sys, glob
 
-results_dir, tornado_spec = sys.argv[1], sys.argv[2]
+results_dir, tornado_spec, root = sys.argv[1], sys.argv[2], sys.argv[3]
+
+# Each package's coverage floor, for the "worth raising" hint below. Best
+# effort: the report is what is left standing when something else has broken,
+# so it must still render if the definitions cannot be read.
+sys.path.insert(0, os.path.join(root, "scripts"))
+try:
+    import pkglib
+
+    floors = {
+        pkg.name: pkg.min_coverage
+        for pkg in pkglib.load_all()
+        if pkg.min_coverage is not None
+    }
+except Exception:
+    floors = {}
+
 rows, counts = [], {}
 for path in sorted(glob.glob(os.path.join(results_dir, "*.txt"))):
     if os.path.basename(path) == "summary.txt":
@@ -45,11 +61,13 @@ for path in sorted(glob.glob(os.path.join(results_dir, "*.txt"))):
     status = kv.get("status", "UNKNOWN")
     counts[status] = counts.get(status, 0) + 1
     rows.append((name, status, kv.get("exit_code", "?"),
-                 kv.get("tornado", "?"), kv.get("test_secs", "?")))
+                 kv.get("tornado", "?"), kv.get("test_secs", "?"),
+                 kv.get("coverage_pct", "n/a")))
 
 emoji = {"PASS": "✅", "FAIL": "❌", "TIMEOUT": "⏱️",
          "INSTALL_FAIL": "🛠️", "SETUP_FAIL": "🛠️",
-         "TORNADO_INSTALL_FAIL": "🌪️", "TORNADO_MISMATCH": "🌪️"}
+         "TORNADO_INSTALL_FAIL": "🌪️", "TORNADO_MISMATCH": "🌪️",
+         "COVERAGE_LOW": "📉"}
 
 out = []
 out.append("## Tornado testbed results")
@@ -58,15 +76,44 @@ out.append(f"**Tornado under test:** `{tornado_spec}`")
 out.append("")
 total = sum(counts.values())
 order = ["PASS", "FAIL", "TIMEOUT", "INSTALL_FAIL", "SETUP_FAIL",
-         "TORNADO_INSTALL_FAIL", "TORNADO_MISMATCH", "UNKNOWN"]
+         "TORNADO_INSTALL_FAIL", "TORNADO_MISMATCH", "COVERAGE_LOW", "UNKNOWN"]
 badge = " · ".join(f"{emoji.get(s, '•')} {s}: {counts[s]}"
                    for s in order if s in counts)
 out.append(f"{total} package(s) — {badge}")
 out.append("")
-out.append("| Package | Status | RC | Tornado | Time (s) |")
-out.append("|---------|--------|----|---------|----------|")
-for name, status, rc, tornado, secs in rows:
-    out.append(f"| {name} | {emoji.get(status, '')} {status} | {rc} | {tornado} | {secs} |")
+measured = [r for r in rows if r[5] not in ("n/a", "")]
+show_cov = bool(measured)
+
+if show_cov:
+    out.append("| Package | Status | RC | Tornado | Time (s) | Coverage |")
+    out.append("|---------|--------|----|---------|----------|----------|")
+else:
+    out.append("| Package | Status | RC | Tornado | Time (s) |")
+    out.append("|---------|--------|----|---------|----------|")
+for name, status, rc, tornado, secs, cov in rows:
+    row = f"| {name} | {emoji.get(status, '')} {status} | {rc} | {tornado} | {secs} |"
+    if show_cov:
+        row += f" {cov if cov in ('n/a', '') else cov + '%'} |"
+    out.append(row)
+
+# A floor that sits far below what a package actually covers stops being a
+# check. Nothing else would ever prompt anyone to raise it, so say so here.
+stale_floors = []
+for name, status, _rc, _t, _s, cov in rows:
+    if status != "PASS" or not cov.isdigit():
+        continue
+    floor = floors.get(name)
+    if floor is not None and int(cov) - floor >= 10:
+        stale_floors.append((name, floor, int(cov)))
+if stale_floors:
+    out.append("")
+    out.append("<details><summary>📈 Coverage floors worth raising</summary>")
+    out.append("")
+    for name, floor, cov in stale_floors:
+        out.append(f"- `{name}`: floor {floor}%, now measuring {cov}% — "
+                   f"consider raising `min_coverage` in `packages/{name}/package.env`")
+    out.append("")
+    out.append("</details>")
 print("\n".join(out))
 
 gh_out = os.environ.get("GITHUB_OUTPUT")

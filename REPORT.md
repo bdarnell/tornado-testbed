@@ -66,12 +66,34 @@ replay procedure for getting that evidence back on demand.
 
 ## Coverage
 
-HTML reports are built on demand, not committed: a serial run
-(`./scripts/ci.sh`, or `scripts/gen_reports.sh` after a run) writes
-`coverage_html/<package>/` and `coverage_html/merged/` (union, path-remapped to
-one canonical Tornado). The job matrix uploads the raw `.coverage` files
-instead, since per-package HTML needs each package's venv and those do not
-survive a matrix job.
+Measured on the **weekly scheduled run** and on **pin-update pull requests**,
+and left off elsewhere: the release gate's job is pass/fail, and `pytest-cov`
+overhead buys it nothing. A manual dispatch can turn it on with the `coverage`
+input.
+
+HTML reports are built on demand and never committed. `scripts/gen_reports.sh`
+writes `coverage_html/<package>/` and `coverage_html/merged/` (union,
+path-remapped to one canonical Tornado), and CI uploads them as the
+`coverage-html` artifact. It works with or without the per-package venvs: every
+package records coverage against its own venv's copy of Tornado, and a `[paths]`
+remap collapses those onto one canonical installation, which is also what lets
+the job matrix render reports from nothing but the uploaded `.coverage` files.
+
+### Coverage floors
+
+Each package declares a `min_coverage` in its `package.env`. When a run
+measures coverage, a package that comes in under its floor fails as
+`COVERAGE_LOW` — even though its tests passed.
+
+This catches the failure that no other signal here would: a new downstream
+release moves or renames the files a `test.sh` names, the command keeps exiting
+0, and it exercises almost none of Tornado. Everything looks green while the
+package has quietly stopped testing anything. Arming this on pin-update PRs is
+the point — that is exactly when it happens.
+
+Floors sit roughly 20% under the measured value, so ordinary drift does not trip
+them. They are only useful while they track reality, so the report flags any
+package running well clear of its own floor.
 
 | Package        | tornado coverage |
 |----------------|:----------------:|
@@ -127,6 +149,11 @@ mind before assuming a number can simply be pushed up.
   not pin their own build backends, so a backend release can stop a downstream
   pin from building at all — which looks like a testbed failure and says nothing
   about Tornado.
+
+- **Coverage numbers in the table above are hand-updated.** The weekly run
+  produces a `coverage-html` artifact, but nothing writes back into this file.
+  Publishing the report somewhere linkable, so this table can stop being a
+  transcription, is an open follow-up.
 
 ## Gotchas worth knowing if you extend the harness
 

@@ -52,5 +52,10 @@ jobs:
       # Latest stable release: a pin bump should be judged against the Tornado
       # people are actually running, not against master.
       tornado_spec: "tornado"
+      # The whole point of running a bump: a new downstream release can move or
+      # rename the tests our test.sh names, and a command that quietly stops
+      # exercising Tornado still passes. The per-package min_coverage floors
+      # turn that into a failure, and they only apply when coverage is measured.
+      coverage: true
     permissions:
       contents: read

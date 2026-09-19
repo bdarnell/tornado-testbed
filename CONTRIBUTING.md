@@ -56,6 +56,12 @@ back. Any path where the requested Tornado is not what gets tested must be a
 hard failure with its own status, not a warning. If you add one, add a case to
 `tests/harness_test.sh` covering it.
 
+`COVERAGE_LOW` is load-bearing in the same way `TORNADO_MISMATCH` is. It exists
+because a test command that has stopped exercising Tornado still exits 0, and
+nothing else the harness records would notice. Do not soften it into a warning,
+and do not lower a package's `min_coverage` to get a run green — that is the
+failure reporting itself correctly.
+
 Note that `scripts/common.sh` enables `set -e`, so any command whose non-zero
 exit you intend to handle needs guarding (`cmd || rc=$?`). An unguarded failure
 aborts before the result file is written, which makes a red package invisible to

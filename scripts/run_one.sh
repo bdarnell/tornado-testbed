@@ -31,6 +31,11 @@
 #   COVERAGE                "1" (default) measures Tornado coverage. When "0",
 #                           COV_ARGS is exported empty so each package's test.sh
 #                           drops its --cov flags and pytest-cov is not installed.
+#                           When measuring, a package that declares min_coverage
+#                           in package.env fails as COVERAGE_LOW if it comes in
+#                           under that floor -- the signal that a test command
+#                           has stopped exercising Tornado rather than that
+#                           Tornado broke.
 #
 # Statuses / exit codes:
 #   PASS                   0
@@ -40,13 +45,13 @@
 #   SETUP_FAIL             4   venv creation or the package's setup.sh failed
 #   TORNADO_INSTALL_FAIL   5   the Tornado under test would not install
 #   TORNADO_MISMATCH       6   the env does not hold the Tornado under test
+#   COVERAGE_LOW           7   tests passed but exercised too little of Tornado
 set -uo pipefail
 source "$(dirname "$0")/common.sh"
 
 TORNADO_SPEC="${TORNADO_SPEC:-tornado}"   # e.g. TORNADO_SPEC="tornado==6.5.1"
 TORNADO_EXPECT_VERSION="${TORNADO_EXPECT_VERSION:-}"
 TIMEOUT_SECS="${TIMEOUT_SECS:-900}"
-PYTHON_VERSION="${PYTHON_VERSION:-3.13}"
 RETRY_TIMEOUT="${RETRY_TIMEOUT:-1}"
 
 usage() {
@@ -73,6 +78,7 @@ attempts=0
 tornado_ver="n/a"
 tornado_file="n/a"
 tornado_after="n/a"
+coverage_pct="n/a"
 
 # write_result <status> <exit_code>
 # Single writer for results/<name>.txt so every exit path emits the same schema.
@@ -84,6 +90,7 @@ write_result() {
         echo "tornado=${tornado_ver}"
         echo "tornado_file=${tornado_file}"
         echo "tornado_after=${tornado_after}"
+        echo "coverage_pct=${coverage_pct}"
         echo "install_secs=${install_secs}"
         echo "test_secs=${test_secs}"
         echo "attempts=${attempts}"
@@ -273,6 +280,36 @@ if [[ "${rc}" -eq 124 ]]; then
     status="TIMEOUT"
 elif [[ "${rc}" -ne 0 ]]; then
     status="FAIL"
+fi
+
+# How much of Tornado this package actually exercised. Measured whenever we have
+# the data, because it is worth seeing in the summary either way.
+if [[ "${COVERAGE:-1}" == "1" && -f "${COVERAGE_FILE}" ]]; then
+    measured="$(python -m coverage report \
+        --data-file="${COVERAGE_FILE}" \
+        --rcfile=/dev/null \
+        --omit="${COVERAGE_OMIT}" \
+        --format=total 2>/dev/null)"
+    # A non-numeric answer means coverage could not read the data; leave the
+    # recorded value as n/a rather than inventing a number to compare against.
+    [[ "${measured}" =~ ^[0-9]+$ ]] && coverage_pct="${measured}"
+    echo "Tornado coverage: ${coverage_pct}%" | tee -a "${log}"
+fi
+
+# The floor is only meaningful when coverage was actually requested and the
+# suite ran to completion. Checking it with COVERAGE=0 would fail every package
+# on the release gate, which deliberately does not measure; and on a failing or
+# timed-out run the low coverage is explained by the failure, so reporting
+# COVERAGE_LOW there would bury the real one.
+if [[ "${COVERAGE:-1}" == "1" && "${status}" == "PASS" && -n "${PKG_MIN_COVERAGE}" ]]; then
+    if [[ "${coverage_pct}" == "n/a" ]]; then
+        die COVERAGE_LOW 7 \
+            "${name} declares min_coverage=${PKG_MIN_COVERAGE}% but no coverage was measured"
+    fi
+    if [[ "${coverage_pct}" -lt "${PKG_MIN_COVERAGE}" ]]; then
+        die COVERAGE_LOW 7 \
+            "Tornado coverage ${coverage_pct}% is below ${name}'s floor of ${PKG_MIN_COVERAGE}%. The tests passed, so this says the test command stopped exercising Tornado rather than that Tornado broke."
+    fi
 fi
 
 write_result "${status}" "${rc}"

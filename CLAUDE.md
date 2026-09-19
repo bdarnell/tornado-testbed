@@ -38,7 +38,12 @@ lives.
   places to edit means two places to disagree.
 - Statuses are load-bearing: `TORNADO_INSTALL_FAIL` and `TORNADO_MISMATCH`
   exist because a run that silently tested the wrong Tornado used to report
-  `PASS`. Keep them distinct from `FAIL`.
+  `PASS`, and `COVERAGE_LOW` exists because a test command that stopped
+  exercising Tornado also reports `PASS`. Keep them distinct from `FAIL`.
+- **The coverage floor only applies when `COVERAGE=1`.** The release gate runs
+  with coverage off, so checking the floor there would fail every package that
+  declares one. It is also skipped unless the suite passed, so a real failure is
+  never reported as `COVERAGE_LOW`.
 
 The rest of the operational gotchas — `filterwarnings=error` in the Jupyter
 stack, `relative_files=true` breaking standalone coverage reports, ZeroMQ

@@ -20,6 +20,18 @@ RESULTS_DIR="${RESULTS_DIR:-${ROOT_DIR}/results}"
 
 mkdir -p "${CHECKOUTS_DIR}" "${LOGS_DIR}" "${RESULTS_DIR}"
 
+# The interpreter the per-package venvs are built with. Defined here so
+# run_one.sh and gen_reports.sh cannot disagree about it.
+PYTHON_VERSION="${PYTHON_VERSION:-3.13}"
+
+# tornado/test/ is tornado's own test suite. It ships inside the tornado package
+# so --cov=tornado picks it up, but no downstream test runs it, so leaving it in
+# would dilute every number with files nothing here could ever cover. Both the
+# HTML reports and the coverage floor in run_one.sh must omit the same thing, so
+# the pattern lives here rather than in either of them.
+# shellcheck disable=SC2034  # read by the scripts that source this file
+COVERAGE_OMIT="*/tornado/test/*"
+
 # Pin build-time (PEP 518) dependencies for every `uv pip install` in the run,
 # including the ones inside a package's test.sh. A build-backend release can
 # stop an older downstream pin from building at all, which looks like a testbed

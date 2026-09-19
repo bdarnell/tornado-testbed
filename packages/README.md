@@ -28,12 +28,13 @@ Parsed as strict `key=value`, never sourced — the matrix job needs `repo` and
 
 | key | required | meaning |
 |---|---|---|
-| `rank` | yes | popularity rank, 1-10. Orders the reports and doubles as a selector: `run_one.sh 7`. |
+| `rank` | yes | popularity rank, contiguous from 1. Orders the reports and doubles as a selector: `run_one.sh 7`. |
 | `repo` | yes | git URL to clone. |
 | `tag_template` | yes | how to build the git tag from the version, e.g. `v{version}` or `{version}`. |
 | `subdir` | yes | directory within the checkout to run tests from (`.` for most). |
 | `install_method` | no | `editable` (default) or `pypi`. |
 | `pypi_extra_deps` | no | extra specs to install alongside, for `pypi` installs. |
+| `min_coverage` | no | percent of Tornado this package must cover. Below it, a *passing* run fails as `COVERAGE_LOW`. |
 
 **The git ref is derived, never stored:** `tag_template` applied to the version
 in `requirements.txt`. Storing both invites them to disagree, and a testbed
@@ -51,6 +52,24 @@ upkeep.
 Run from the checkout, inside the package's venv, with the Tornado under test
 already force-installed. Coverage flags come from `COV_ARGS`, which the harness
 exports empty when a run is not measuring coverage.
+
+### min_coverage
+
+A passing test run is not by itself evidence that anything was tested. When a
+new downstream release moves or renames the files `test.sh` names, the command
+can keep exiting 0 while exercising almost none of Tornado — which looks
+identical to a healthy run in every other signal the harness collects.
+
+`min_coverage` closes that gap: when a run measures coverage, a package that
+comes in under its floor fails as `COVERAGE_LOW` even though its tests passed.
+The floors sit roughly 20% under the measured value, so ordinary drift does not
+trip them and a collapse does.
+
+They only mean anything while they track reality. When coverage genuinely
+improves, raise the floor — the report prints a reminder when a package is
+running well clear of its own. Dependabot never touches these values, which is
+the point: a pin bump that guts the test command fails on its own pull request.
+
 
 ## Selection criteria
 

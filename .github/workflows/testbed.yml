@@ -127,14 +127,23 @@ jobs:
           IN_COVERAGE: ${{ inputs.coverage }}
           IN_FAIL_ON_REGRESSION: ${{ inputs.fail_on_regression }}
           IN_TIMEOUT_SECS: ${{ inputs.timeout_secs }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           # `schedule` runs have no inputs at all, so every value needs a
           # fallback here rather than only in the `on:` block.
+          #
+          # The weekly run is the one that measures coverage: it is not gating
+          # anything, so it can afford pytest-cov, and it is what keeps the
+          # per-package floors honest between releases.
+          coverage=0
+          if [[ "${IN_COVERAGE}" == "true" || "${EVENT_NAME}" == "schedule" ]]; then
+            coverage=1
+          fi
           {
             echo "tornado_spec=${IN_TORNADO_SPEC:-git+https://github.com/tornadoweb/tornado.git@master}"
             echo "tornado_artifact=${IN_TORNADO_ARTIFACT:-}"
             echo "python_version=${IN_PYTHON_VERSION:-3.13}"
-            echo "coverage=$([[ "${IN_COVERAGE}" == "true" ]] && echo 1 || echo 0)"
+            echo "coverage=${coverage}"
             echo "fail_on_regression=$([[ "${IN_FAIL_ON_REGRESSION}" == "false" ]] && echo 0 || echo 1)"
             echo "timeout_secs=${IN_TIMEOUT_SECS:-900}"
           } >> "$GITHUB_OUTPUT"
@@ -256,6 +265,50 @@ jobs:
           path: collected
           merge-multiple: true
 
+      # Tolerated rather than required: if every package failed before producing
+      # coverage there is nothing to download, and that must not cost us the
+      # test report, which is the thing people actually came for.
+      - name: Collect per-package coverage data
+        if: needs.plan.outputs.coverage == '1'
+        continue-on-error: true
+        uses: actions/download-artifact@v7
+        with:
+          pattern: coverage-*
+          path: coverage
+          merge-multiple: true
+
+      - uses: astral-sh/setup-uv@v7
+        if: needs.plan.outputs.coverage == '1'
+        with:
+          cache-suffix: report
+
+      - name: Download tornado artifact
+        if: needs.plan.outputs.coverage == '1' && needs.plan.outputs.tornado_artifact != ''
+        uses: actions/download-artifact@v7
+        with:
+          name: ${{ needs.plan.outputs.tornado_artifact }}
+          path: tornado-artifact
+
+      # The reports are rendered against a tornado this job installs, so it has
+      # to be the same one the packages ran against or the annotated HTML will
+      # not line up with the recorded line numbers.
+      - name: Build coverage reports
+        if: needs.plan.outputs.coverage == '1'
+        env:
+          ARTIFACT: ${{ needs.plan.outputs.tornado_artifact }}
+          SPEC: ${{ needs.plan.outputs.tornado_spec }}
+          PYTHON_VERSION: ${{ needs.plan.outputs.python_version }}
+        run: |
+          if [[ -n "${ARTIFACT}" ]]; then
+            eval "$(./scripts/resolve_tornado_artifact.sh tornado-artifact)"
+            export TORNADO_SPEC
+          else
+            export TORNADO_SPEC="${SPEC}"
+          fi
+          # Best-effort, exactly as ci.sh treats it: a failed report build must
+          # not mask the test results the run already produced.
+          ./scripts/gen_reports.sh || echo "WARNING: coverage report generation failed"
+
       - name: Report
         id: report
         env:
@@ -272,4 +325,12 @@ jobs:
         with:
           name: testbed-results
           path: collected/
+          if-no-files-found: warn
+
+      - name: Upload coverage reports
+        if: always() && needs.plan.outputs.coverage == '1'
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-html
+          path: coverage_html/
           if-no-files-found: warn

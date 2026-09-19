@@ -37,7 +37,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 PKGDEFS_DIR = ROOT / "packages"
 
 REQUIRED_KEYS = {"rank", "repo", "tag_template", "subdir"}
-OPTIONAL_KEYS = {"install_method", "pypi_extra_deps"}
+OPTIONAL_KEYS = {"install_method", "pypi_extra_deps", "min_coverage"}
 KNOWN_KEYS = REQUIRED_KEYS | OPTIONAL_KEYS
 INSTALL_METHODS = {"", "editable", "pypi"}
 
@@ -61,6 +61,7 @@ class Package:
     subdir: str
     install_method: str
     pypi_extra_deps: str
+    min_coverage: int | None
     dist_name: str
     version: str
     directory: pathlib.Path
@@ -89,6 +90,7 @@ class Package:
             "PKG_SUBDIR": self.subdir,
             "PKG_INSTALL_METHOD": self.install_method or "editable",
             "PKG_PYPI_EXTRA_DEPS": self.pypi_extra_deps,
+            "PKG_MIN_COVERAGE": "" if self.min_coverage is None else str(self.min_coverage),
             "PKG_VERSION": self.version,
             "PKG_DIST_NAME": self.dist_name,
             "PKG_DIR": str(self.directory),
@@ -163,6 +165,23 @@ def load(name: str) -> Package:
             f"{directory/'package.env'}: rank must be an integer, got {env['rank']!r}"
         ) from None
 
+    # The floor below which this package's tornado coverage is treated as a
+    # broken test command rather than a real measurement. Absent means unchecked.
+    min_coverage: int | None = None
+    if "min_coverage" in env:
+        try:
+            min_coverage = int(env["min_coverage"])
+        except ValueError:
+            raise PackageError(
+                f"{directory/'package.env'}: min_coverage must be an integer "
+                f"percent, got {env['min_coverage']!r}"
+            ) from None
+        if not 0 <= min_coverage <= 100:
+            raise PackageError(
+                f"{directory/'package.env'}: min_coverage must be between 0 and "
+                f"100, got {min_coverage}"
+            )
+
     dist_name, version = parse_requirement(directory / "requirements.txt")
     if "{version}" not in env["tag_template"]:
         raise PackageError(
@@ -178,6 +197,7 @@ def load(name: str) -> Package:
         subdir=env["subdir"],
         install_method=install_method,
         pypi_extra_deps=env.get("pypi_extra_deps", ""),
+        min_coverage=min_coverage,
         dist_name=dist_name,
         version=version,
         directory=directory,

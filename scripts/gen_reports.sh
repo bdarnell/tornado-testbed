@@ -1,28 +1,106 @@
 #!/usr/bin/env bash
 # Generate HTML coverage reports for each package and a merged report.
-# Run this after scripts/run_all.sh (or run_one.sh) has produced coverage data
-# in coverage/<name>.coverage.
+# Run after run_all.sh / run_one.sh has produced coverage/<name>.coverage, or in
+# CI over per-package coverage artifacts downloaded into the same place.
 #
 # Outputs:
 #   coverage_html/<name>/   — per-package report, tornado library files only
 #   coverage_html/merged/   — union of all packages, path-remapped to a single
 #                             canonical tornado installation
+#
+# Every package records coverage against its own venv's copy of tornado, so all
+# rendering goes through `coverage combine` with a [paths] remap that collapses
+# those copies onto one canonical tornado. That is what lets this run somewhere
+# the per-package venvs do not exist -- the job matrix uploads the .coverage
+# files but nothing else, so there is nothing to render against until the remap
+# has pointed them all at a tornado this machine actually has.
+#
+# Inputs (environment):
+#   TORNADO_SPEC  Which tornado to install into the report venv, when one has to
+#                 be built. Must be the same tornado the packages ran against or
+#                 the annotated HTML will not line up with the recorded data.
 set -uo pipefail
 source "$(dirname "$0")/common.sh"
 
 REPORTS_DIR="${ROOT_DIR}/coverage_html"
 COV_DIR="${ROOT_DIR}/coverage"
+REPORT_VENV="${COV_DIR}/.report-venv"
+TORNADO_SPEC="${TORNADO_SPEC:-tornado}"
 
-# tornado/test/ contains tornado's own test suite.  It's part of the tornado
-# package so --cov=tornado picks it up, but every package has 0% coverage on
-# those files (no downstream test runs tornado's own tests).  Omitting them
-# keeps the reports focused on the library code that packages actually use.
-OMIT_PATTERN="*/tornado/test/*"
-
-mkdir -p "${REPORTS_DIR}"
-
+mkdir -p "${REPORTS_DIR}" "${COV_DIR}"
 mapfile -t names < <(pkg_names)
-canonical_tornado=""   # set on first successful package
+
+# ── the environment reports are rendered with ────────────────────────────────
+# Needs two things: coverage installed, and tornado source on disk to annotate.
+# A local serial run already has both in every package venv; the matrix path has
+# neither, so build one.
+COV_PY=""
+for name in "${names[@]}"; do
+    candidate="${CHECKOUTS_DIR}/${name}/.venv/bin/python"
+    if [[ -x "${candidate}" ]] && "${candidate}" -c 'import coverage, tornado' 2>/dev/null; then
+        COV_PY="${candidate}"
+        echo "Rendering with ${name}'s venv"
+        break
+    fi
+done
+
+if [[ -z "${COV_PY}" ]]; then
+    echo "No package venv available; building a report venv for ${TORNADO_SPEC}"
+    rm -rf "${REPORT_VENV}"
+    if ! uv venv --python "${PYTHON_VERSION}" "${REPORT_VENV}" >/dev/null 2>&1; then
+        echo "ERROR: could not create the report venv" >&2
+        exit 1
+    fi
+    if ! uv pip install --python "${REPORT_VENV}/bin/python" -q coverage "${TORNADO_SPEC}"; then
+        echo "ERROR: could not install coverage and ${TORNADO_SPEC} into the report venv" >&2
+        exit 1
+    fi
+    COV_PY="${REPORT_VENV}/bin/python"
+fi
+
+canonical_tornado="$("${COV_PY}" -c 'import tornado, os; print(os.path.dirname(tornado.__file__))')"
+if [[ -z "${canonical_tornado}" || ! -d "${canonical_tornado}" ]]; then
+    echo "ERROR: no tornado source to render against" >&2
+    exit 1
+fi
+echo "Canonical tornado source: ${canonical_tornado}"
+
+# Remap config: every package's own site-packages tornado is rewritten to the
+# canonical one, so data recorded in nine different venvs describes one library.
+MERGE_CFG="${COV_DIR}/.coveragerc-merge"
+{
+    echo "[paths]"
+    echo "tornado ="
+    # Canonical path first — coverage.py uses it as the target.
+    echo "    ${canonical_tornado}"
+    # Matches any package's site-packages tornado directory.
+    echo "    */site-packages/tornado"
+    echo ""
+    # [run] omit applies during collection; [report] omit applies during reporting.
+    echo "[report]"
+    echo "omit = ${COVERAGE_OMIT}"
+} > "${MERGE_CFG}"
+
+# remap <source-data-file> <output-data-file>
+# Rewrites recorded paths onto the canonical tornado. --keep leaves the input
+# alone so a rerun still has something to work from.
+remap() {
+    rm -f "$2"
+    COVERAGE_FILE="$2" "${COV_PY}" -m coverage combine \
+        --rcfile="${MERGE_CFG}" --keep "$1" >/dev/null 2>&1
+}
+
+# render <data-file> <output-dir> <title>
+render() {
+    rm -rf "${2:?}"
+    "${COV_PY}" -m coverage html \
+        --data-file="$1" \
+        --rcfile=/dev/null \
+        --omit="${COVERAGE_OMIT}" \
+        -d "$2" \
+        --title="$3" \
+        2>&1 | grep -v "^$" || echo "  (no output)"
+}
 
 # Drop report directories for packages that no longer exist. A stale report is
 # worse than a missing one: it keeps publishing coverage for a package that was
@@ -38,108 +116,42 @@ for existing in "${REPORTS_DIR}"/*/; do
 done
 
 # ── per-package reports ─────────────────────────────────────────────────────
+cov_files=()
 for name in "${names[@]}"; do
     cov_file="${COV_DIR}/${name}.coverage"
-    venv="${CHECKOUTS_DIR}/${name}/.venv"
-
     if [[ ! -f "${cov_file}" ]]; then
         echo "⚠  No coverage data for ${name} (expected ${cov_file}), skipping"
         continue
     fi
-    if [[ ! -d "${venv}" ]]; then
-        echo "⚠  No venv for ${name}, skipping"
-        continue
-    fi
+    cov_files+=("${cov_file}")
 
     echo "=== ${name} ==="
-    # shellcheck disable=SC1091
-    source "${venv}/bin/activate"
-
-    # Capture the canonical tornado path from the first working venv.
-    if [[ -z "${canonical_tornado}" ]]; then
-        canonical_tornado="$(python -c \
-            'import tornado, os; print(os.path.dirname(tornado.__file__))')"
-        echo "Canonical tornado source: ${canonical_tornado}"
+    remapped="${COV_DIR}/.remapped-${name}.coverage"
+    if ! remap "${cov_file}" "${remapped}"; then
+        echo "⚠  Could not remap ${name}'s coverage data, skipping"
+        continue
     fi
-
-    rm -rf "${REPORTS_DIR:?}/${name}"
-    coverage html \
-        --data-file="${cov_file}" \
-        --rcfile=/dev/null \
-        --omit="${OMIT_PATTERN}" \
-        -d "${REPORTS_DIR}/${name}" \
-        --title="${name} — tornado coverage" \
-        2>&1 | grep -v "^$" || echo "  (no output)"
-
-    deactivate || true
+    render "${remapped}" "${REPORTS_DIR}/${name}" "${name} — tornado coverage"
+    rm -f "${remapped}"
 done
 
 # ── merged report ────────────────────────────────────────────────────────────
 echo ""
 echo "=== merged ==="
 
-if [[ -z "${canonical_tornado}" ]]; then
+if [[ "${#cov_files[@]}" -eq 0 ]]; then
     echo "ERROR: no coverage data found, cannot build merged report" >&2
     exit 1
 fi
 
-# Build a coverage config that remaps every package's tornado installation
-# to the canonical path so coverage combine treats them as the same source.
-MERGE_CFG="${COV_DIR}/.coveragerc-merge"
-{
-    echo "[paths]"
-    echo "tornado ="
-    # Canonical path first (coverage.py uses it as the target).
-    echo "    ${canonical_tornado}"
-    # Glob pattern that matches any package's site-packages tornado directory.
-    echo "    */site-packages/tornado"
-    echo ""
-    # [run] omit applies during collection; [report] omit applies during reporting.
-    echo "[report]"
-    echo "omit = ${OMIT_PATTERN}"
-} > "${MERGE_CFG}"
-
 MERGED_COV="${COV_DIR}/merged.coverage"
-
-# Collect all per-package coverage files that exist.
-cov_files=()
-for name in "${names[@]}"; do
-    f="${COV_DIR}/${name}.coverage"
-    [[ -f "${f}" ]] && cov_files+=("${f}")
-done
-
-# Any package's venv will do -- they all have coverage installed. Use the first
-# one that actually exists rather than assuming the highest-ranked package ran.
-venv_for_merge=""
-for name in "${names[@]}"; do
-    if [[ -d "${CHECKOUTS_DIR}/${name}/.venv" ]]; then
-        venv_for_merge="${CHECKOUTS_DIR}/${name}/.venv"
-        break
-    fi
-done
-if [[ -z "${venv_for_merge}" ]]; then
-    echo "No package venv available to build the merged report; skipping."
-    exit 0
-fi
-# shellcheck disable=SC1091
-source "${venv_for_merge}/bin/activate"
-
-COVERAGE_FILE="${MERGED_COV}" coverage combine \
+rm -f "${MERGED_COV}"
+COVERAGE_FILE="${MERGED_COV}" "${COV_PY}" -m coverage combine \
     --rcfile="${MERGE_CFG}" \
     --keep \
     "${cov_files[@]}" 2>&1
 
-rm -rf "${REPORTS_DIR}/merged"
-mkdir -p "${REPORTS_DIR}/merged"
-coverage html \
-    --data-file="${MERGED_COV}" \
-    --rcfile=/dev/null \
-    --omit="${OMIT_PATTERN}" \
-    -d "${REPORTS_DIR}/merged" \
-    --title="All packages — tornado coverage (merged)" \
-    2>&1 | grep -v "^$"
-
-deactivate || true
+render "${MERGED_COV}" "${REPORTS_DIR}/merged" "All packages — tornado coverage (merged)"
 
 echo ""
 echo "Reports written to ${REPORTS_DIR}/"

@@ -115,6 +115,10 @@ reject "two requirements in one file is rejected" \
 reject "unpinned requirement is rejected"   "echo 'beta' > packages/beta/requirements.txt"
 reject "non-executable test.sh is rejected" "chmod -x packages/beta/test.sh"
 reject "missing README.md is rejected"      "rm packages/beta/README.md"
+reject "non-integer min_coverage is rejected" \
+                                            "echo 'min_coverage=lots' >> packages/beta/package.env"
+reject "out-of-range min_coverage is rejected" \
+                                            "echo 'min_coverage=101' >> packages/beta/package.env"
 
 echo "== report.sh =="
 
@@ -182,12 +186,23 @@ if ! (uv venv --python 3.11 "${probe}/v" >/dev/null 2>&1 \
     skip "run_one.sh status mapping" "cannot install tornado (no network?)"
 else
     # run_status <test-body> [env assignments...] -> "<status> <rc>"
+    # run_status <test-body> [VAR=value...] -> "<status> <rc>"
+    # EXTRA_ENV=<line> is pulled out and appended to the package's package.env
+    # rather than passed to run_one.sh.
     run_status() {
         local body="$1"; shift
+        local extra="" arg
+        local -a envs=()
+        for arg in "$@"; do
+            case "${arg}" in
+                EXTRA_ENV=*) extra="${arg#EXTRA_ENV=}" ;;
+                *) envs+=("${arg}") ;;
+            esac
+        done
         local r
         r="$(new_root)"
-        make_pkg "${r}" subject 1 "${body}"
-        ( cd "${r}" && env "$@" ./scripts/run_one.sh subject >/dev/null 2>&1 )
+        make_pkg "${r}" subject 1 "${body}" "${extra}"
+        ( cd "${r}" && env "${envs[@]}" ./scripts/run_one.sh subject >/dev/null 2>&1 )
         local rc=$?
         local status
         status="$(awk -F= '/^status=/ {print $2}' "${r}/results/subject.txt" 2>/dev/null)"
@@ -237,6 +252,35 @@ else
     # shellcheck disable=SC2016  # the test body is evaluated inside the package
     check "COVERAGE=1 leaves COV_ARGS to the package default" "PASS 0" \
         "$(run_status '[[ "${COV_ARGS-unset}" == "unset" ]]' TORNADO_SPEC=tornado COVERAGE=1)"
+
+    # The coverage floor. A synthetic package covers a sliver of tornado, which
+    # is enough to exercise the numeric comparison in both directions.
+    # Importing tornado.web covers ~14% of tornado, which is enough headroom to
+    # sit clearly above a small floor and clearly below a large one.
+    # shellcheck disable=SC2016  # COVERAGE_FILE is expanded inside the package
+    cover_body='python -m coverage run --data-file="${COVERAGE_FILE}" --source=tornado -m tornado.web'
+
+    # shellcheck disable=SC2016  # the body is evaluated inside the package
+    check "coverage above the floor passes" "PASS 0" \
+        "$(run_status "${cover_body}" TORNADO_SPEC=tornado COVERAGE=1 \
+            EXTRA_ENV=min_coverage=5)"
+
+    # shellcheck disable=SC2016
+    check "coverage below the floor is COVERAGE_LOW/7" "COVERAGE_LOW 7" \
+        "$(run_status "${cover_body}" TORNADO_SPEC=tornado COVERAGE=1 \
+            EXTRA_ENV=min_coverage=99)"
+
+    # A floor with nothing measured is a broken test command, not a pass.
+    check "a floor with no coverage data is COVERAGE_LOW/7" "COVERAGE_LOW 7" \
+        "$(run_status 'true' TORNADO_SPEC=tornado COVERAGE=1 EXTRA_ENV=min_coverage=10)"
+
+    # Regression: the release gate runs with COVERAGE=0, and briefly every
+    # package with a floor failed there because the check ran anyway.
+    check "COVERAGE=0 does not check the floor" "PASS 0" \
+        "$(run_status 'true' TORNADO_SPEC=tornado COVERAGE=0 EXTRA_ENV=min_coverage=99)"
+
+    check "no floor declared means no check" "PASS 0" \
+        "$(run_status 'true' TORNADO_SPEC=tornado COVERAGE=1)"
 
     # uv errors on a constraints file that is not there, so pointing at one
     # unconditionally turned every install into an INSTALL_FAIL. A checkout
