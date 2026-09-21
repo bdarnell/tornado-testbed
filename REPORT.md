@@ -199,3 +199,11 @@ mind before assuming a number can simply be pushed up.
 - **A package needing generated code gets a `setup.sh` hook** — protobuf codegen
   for streamlit was the original case; flower's `redis` install is the current
   one.
+- **A reusable workflow does not check itself out.** Under `workflow_call` the
+  runner's workspace is the *caller's* repository, so a bare `actions/checkout`
+  in `testbed.yml` fetches tornado, not the harness, and every step fails on a
+  missing `scripts/`. The checkouts name `job.workflow_repository` and
+  `job.workflow_sha` — the repository and commit of the workflow file defining
+  the job — which is also correct for a dispatch, the schedule and pins.yml's
+  local call. This only breaks when tornado calls us, so dispatching the
+  workflow here proves nothing about it.

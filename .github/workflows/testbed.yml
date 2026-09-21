@@ -111,8 +111,18 @@ jobs:
       fail_on_regression: ${{ steps.cfg.outputs.fail_on_regression }}
       timeout_secs: ${{ steps.cfg.outputs.timeout_secs }}
     steps:
-      - uses: actions/checkout@v6
+      # Not a bare checkout: github.repository is the CALLER's repository, so
+      # under `workflow_call` this checked out tornado -- which has no scripts/
+      # -- and every step below died on a missing file. The job context names
+      # the repository and commit of the workflow file defining this job, which
+      # is this file, so the harness that runs is the one belonging to the
+      # workflow the caller pinned. For a dispatch, the schedule, or pins.yml's
+      # local call it is this repository at the run's own commit, as before.
+      - name: Check out the testbed
+        uses: actions/checkout@v6
         with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
           persist-credentials: false
 
       - name: Validate package definitions
@@ -170,8 +180,12 @@ jobs:
       matrix:
         package: ${{ fromJson(needs.plan.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v6
+      # The testbed, not the caller -- see the `plan` job.
+      - name: Check out the testbed
+        uses: actions/checkout@v6
         with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
           persist-credentials: false
 
       - uses: astral-sh/setup-uv@v7
@@ -254,8 +268,12 @@ jobs:
       passed: ${{ steps.report.outputs.passed }}
       failed: ${{ steps.report.outputs.failed }}
     steps:
-      - uses: actions/checkout@v6
+      # The testbed, not the caller -- see the `plan` job.
+      - name: Check out the testbed
+        uses: actions/checkout@v6
         with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
           persist-credentials: false
 
       - name: Collect per-package results
