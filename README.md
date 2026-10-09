@@ -85,6 +85,11 @@ It commits nothing: results are read from the build log and the uploaded
 `tornado_spec` input, or call it as a reusable workflow from another repository
 — which is how tornado's own release build uses it.
 
+Each package runs as its own job. A failing package turns its own job red and
+prints its full log there (passing packages fold theirs into a collapsed
+group); the remaining packages and the final report still run. With
+`fail_on_regression` off, per-package jobs stay green, like the report.
+
 ## Adding or changing a package
 
 Everything about a package lives in its own directory under `packages/`; see

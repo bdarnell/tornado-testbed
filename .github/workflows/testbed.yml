@@ -243,16 +243,41 @@ jobs:
           PACKAGE: ${{ matrix.package }}
         run: ./scripts/setup.sh "${PACKAGE}"
 
+      # A red package turns this job red, so the failure is visible on the
+      # package that caused it rather than only in the report. That does not
+      # stop the rest of the run: the uploads below are `if: always()`, the
+      # matrix is fail-fast: false, and the report job runs regardless. With
+      # fail_on_regression off (report-only), a red package leaves this job
+      # green, matching the report.
       - name: Run ${{ matrix.package }}
         env:
           PACKAGE: ${{ matrix.package }}
           PYTHON_VERSION: ${{ needs.plan.outputs.python_version }}
           COVERAGE: ${{ needs.plan.outputs.coverage }}
           TIMEOUT_SECS: ${{ needs.plan.outputs.timeout_secs }}
-        # run_one.sh exits with the package's own status code. The report job
-        # decides what that means for the run as a whole, so a red package must
-        # not fail this job before its result is uploaded.
-        run: ./scripts/run_one.sh "${PACKAGE}" || true
+          FAIL_ON_REGRESSION: ${{ needs.plan.outputs.fail_on_regression }}
+        run: |
+          rc=0
+          ./scripts/run_one.sh "${PACKAGE}" || rc=$?
+
+          # run_one.sh sends the install and test output to the log file and
+          # prints only a summary. Put the whole log in this job's output too:
+          # expanded when the package failed, folded when it passed.
+          log="logs/${PACKAGE}.log"
+          if [[ "${rc}" -eq 0 ]]; then
+            echo "::group::Full log (${log})"
+            cat "${log}" 2>/dev/null || echo "(no log written)"
+            echo "::endgroup::"
+            exit 0
+          fi
+
+          echo "==================== Full log (${log}) ===================="
+          cat "${log}" 2>/dev/null || echo "(no log written)"
+          status="$(sed -n 's/^status=//p' "results/${PACKAGE}.txt" 2>/dev/null)"
+          echo "::error title=${PACKAGE}: ${status:-no result}::${PACKAGE} finished with ${status:-no result} (exit ${rc}); the full log is above."
+          if [[ "${FAIL_ON_REGRESSION}" == "1" ]]; then
+            exit "${rc}"
+          fi
 
       - name: Upload result
         if: always()
