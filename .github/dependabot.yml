@@ -14,9 +14,26 @@ updates:
   # one shared requirements file) are deliberate: dependabot would otherwise
   # have to resolve streamlit, distributed and jupyterhub into a single
   # environment, which cannot succeed.
+  #
+  # The directories are listed explicitly, not as a "/packages/*" glob: with the
+  # glob, every bump arrived twice, once "in /packages" and once "in
+  # /packages/<name>", with identical diffs. That is a known, unfixed dependabot
+  # bug with glob directories (dependabot/dependabot-core#10884), not something
+  # a better pattern avoids. scripts/validate_packages.py checks that this list
+  # matches packages/ exactly, so a new package cannot be left out.
   - package-ecosystem: "pip"
     directories:
-      - "/packages/*"
+      - "/packages/bokeh"
+      - "/packages/distributed"
+      - "/packages/flower"
+      - "/packages/ipykernel"
+      - "/packages/jupyter_server"
+      - "/packages/jupyterhub"
+      - "/packages/mitmproxy"
+      - "/packages/notebook"
+      - "/packages/panel"
+      - "/packages/thumbor"
+      - "/packages/voila"
     schedule:
       interval: "weekly"
     # One PR per package, so the default of 5 would starve some of them.
