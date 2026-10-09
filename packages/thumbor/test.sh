@@ -35,6 +35,18 @@ args=(
     # HTTP and HTTPS, 404, request_timeout -- still run.
     --deselect tests/loaders/test_http_loader.py::HttpCurlTimeoutLoaderTestCase::test_load_with_speed_timeout
 
+    # Render animated GIFs as GIFV video by shelling out to ffmpeg, which CI
+    # runners do not have. thumbor's video pipeline, not Tornado: installing
+    # ffmpeg would add a large system dependency for no Tornado signal.
+    --deselect tests/handlers/test_base_handler_with_gifv.py::ImageOperationsWithGifVTestCase::test_should_convert_animated_gif_to_mp4_when_filter_without_params
+    --deselect tests/handlers/test_base_handler_with_gifv.py::ImageOperationsWithGifVTestCase::test_should_convert_animated_gif_to_mp4_with_filter_without_params
+
+    # thumbor's install self-check: compares the full `thumbor-doctor` output,
+    # which lists every optional tool (ffmpeg among them) as present or
+    # missing, against a fixture that expects all of them. It tests the
+    # environment, not Tornado.
+    --deselect tests/test_doctor.py::test_get_doctor_output_no_config
+
     -q
 )
 

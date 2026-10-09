@@ -119,8 +119,8 @@ chosen by a combination of GitHub stars and PyPI download volume. Each:
 - **thumbor** — added alongside mitmproxy, not instead of anything. Its
   Tornado usage is narrower, but it is the only package in the set that
   exercises `tornado.curl_httpclient`; without it a regression there could not
-  turn anything red. It brings two system tools (`gifsicle`, `jpegtran`),
-  declared in `apt_packages`. See [`thumbor/README.md`](thumbor/README.md).
+  turn anything red. It brings one system tool, `gifsicle`, declared in
+  `apt_packages`. See [`thumbor/README.md`](thumbor/README.md).
 
 ## Adding a package
 

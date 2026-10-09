@@ -33,12 +33,19 @@ reach libcurl.
 
 ## Why the suite is shaped this way
 
-The whole unit suite runs (about 30s). Two things are deselected, each with its
-reason in `test.sh`: the queued-detector tests, which need Redis servers on
-fixed ports, and one curl low-speed-timeout test that fails identically on
-every Tornado version because of how its handler stalls the IOLoop.
+The whole unit suite runs (about 30s). Deselected, each with its reason in
+`test.sh`:
+
+- the queued-detector tests, which need Redis servers on fixed ports;
+- one curl low-speed-timeout test that fails identically on every Tornado
+  version because of how its handler stalls the IOLoop;
+- two GIFV tests that shell out to ffmpeg, and the `thumbor-doctor` output
+  test, which expects every optional tool (ffmpeg among them) to be
+  installed. Installing ffmpeg would be a large system dependency bought for
+  no Tornado signal.
 
 `setup.sh` installs the `all` extra (pycurl, opencv, image-format plugins) and
-the `tests` extra, and refuses to continue unless `gifsicle` and `jpegtran` are
-on PATH: without them about 10 tests fail with 504s that have nothing to do
-with Tornado. CI installs them from `apt_packages` in `package.env`.
+the `tests` extra, and refuses to continue unless `gifsicle` is on PATH:
+without it about 10 tests fail with 504s that have nothing to do with Tornado.
+CI installs it from `apt_packages` in `package.env`. jpegtran is not required:
+thumbor's jpegtran tests skip themselves unless exiftool is installed too.

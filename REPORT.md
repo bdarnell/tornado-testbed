@@ -24,7 +24,7 @@ and verifies that is what actually ends up imported.
 | mitmproxy      | v12.2.3    | 63 passed, 1 skipped     | PASS   | 7s   |
 | notebook       | v7.6.2     | 6 passed                 | PASS   | 7s   |
 | panel          | v1.9.4     | 49 passed, 2 skipped     | PASS   | 11s  |
-| thumbor        | 7.8.0      | 636 passed, 9 skipped    | PASS   | 34s  |
+| thumbor        | 7.8.0      | 633 passed, 9 skipped    | PASS   | 34s  |
 | voila          | v0.5.13    | 2 passed                 | PASS   | 10s  |
 
 **11/11 green.** mitmproxy's and thumbor's rows are from the runs that added
@@ -156,10 +156,10 @@ mind before assuming a number can simply be pushed up.
   `packages/voila/README.md` to opt in by hand.
 
 - **System prerequisites:** **node/npm** must be on PATH so jupyterhub can
-  install/run `configurable-http-proxy`, and **gifsicle** and **jpegtran** for
-  thumbor's image pipeline. CI installs the latter from thumbor's
-  `apt_packages`; locally, thumbor's `setup.sh` stops with `SETUP_FAIL` if they
-  are missing rather than letting ~10 tests fail with 504s.
+  install/run `configurable-http-proxy`, and **gifsicle** for thumbor's
+  image pipeline. CI installs gifsicle from thumbor's `apt_packages`; locally,
+  thumbor's `setup.sh` stops with `SETUP_FAIL` if it is missing rather than
+  letting ~10 tests fail with 504s.
 
 - **Build-time dependencies are pinned** in `build-constraints.txt`. Packages do
   not pin their own build backends, so a backend release can stop a downstream

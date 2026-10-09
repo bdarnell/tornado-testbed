@@ -32,9 +32,9 @@ REPORT.md              current state of the harness
 - `git`, and a POSIX shell with `python3`
 - `node`/`npm` on PATH — jupyterhub's live-server tests need
   `configurable-http-proxy`
-- `gifsicle` and `jpegtran` on PATH — thumbor's image pipeline shells out to
-  them (Debian/Ubuntu: `apt-get install gifsicle libjpeg-turbo-progs`; CI
-  installs them from thumbor's `apt_packages`)
+- `gifsicle` on PATH — thumbor's image pipeline shells out to it
+  (Debian/Ubuntu: `apt-get install gifsicle`; CI installs it from thumbor's
+  `apt_packages`)
 
 Docker is not required; each package is isolated in its own `uv` venv.
 
