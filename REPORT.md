@@ -13,25 +13,33 @@ and verifies that is what actually ends up imported.
 
 ## Current results (tornado 6.5.10, Python 3.13)
 
-| # | Package        | Ref        | Tests run                | Status | Time |
-|---|----------------|------------|--------------------------|--------|------|
-| 1 | bokeh          | 3.10.0     | 24 passed                | PASS   | 6s   |
-| 2 | jupyter_server | v2.21.1    | 1136 passed, 34 skipped  | PASS   | 297s |
-| 3 | notebook       | v7.6.2     | 6 passed                 | PASS   | 7s   |
-| 4 | jupyterhub     | 6.0.1      | 213 passed               | PASS   | 158s |
-| 5 | distributed    | 2026.8.0   | 21 passed                | PASS   | 5s   |
-| 6 | flower         | v2.1.0     | 251 passed, 2 skipped    | PASS   | 6s   |
-| 7 | ipykernel      | v7.3.0     | 181 passed, 26 skipped   | PASS   | 90s  |
-| 8 | panel          | v1.9.4     | 49 passed, 2 skipped     | PASS   | 11s  |
-| 9 | voila          | v0.5.13    | 2 passed                 | PASS   | 10s  |
+| #  | Package        | Ref        | Tests run                | Status | Time |
+|----|----------------|------------|--------------------------|--------|------|
+| 1  | bokeh          | 3.10.0     | 24 passed                | PASS   | 6s   |
+| 2  | jupyter_server | v2.21.1    | 1136 passed, 34 skipped  | PASS   | 297s |
+| 3  | notebook       | v7.6.2     | 6 passed                 | PASS   | 7s   |
+| 4  | jupyterhub     | 6.0.1      | 213 passed               | PASS   | 158s |
+| 5  | distributed    | 2026.8.0   | 21 passed                | PASS   | 5s   |
+| 6  | flower         | v2.1.0     | 251 passed, 2 skipped    | PASS   | 6s   |
+| 7  | ipykernel      | v7.3.0     | 181 passed, 26 skipped   | PASS   | 90s  |
+| 8  | panel          | v1.9.4     | 49 passed, 2 skipped     | PASS   | 11s  |
+| 9  | voila          | v0.5.13    | 2 passed                 | PASS   | 10s  |
+| 10 | mitmproxy      | v12.2.3    | 63 passed, 1 skipped     | PASS   | 7s   |
 
-**9/9 green.** Full output is in `logs/<package>.log`; machine-readable results
-in `results/<package>.txt`; the table is reproducible with
-`scripts/summarize.sh`.
+**10/10 green.** Rows 1–9 are from the run that dropped streamlit; mitmproxy's
+row is from the run that added it, against the same 6.5.10. In that full run
+jupyter_server had one failure, `test_restart_kernel[jp_server_config0]`: it
+gives a closed WebSocket one second to drop out of the kernel's connection
+count, which it missed under load, and it passed 3/3 when re-run on its own.
+Watch for it recurring before deselecting it. Full output is in
+`logs/<package>.log`; machine-readable results in `results/<package>.txt`; the
+table is reproducible with `scripts/summarize.sh`.
 
 The jupyter_server / jupyterhub / ipykernel suites drive **real Tornado test
 servers** (live `ServerApp`s, a real MockHub + `configurable-http-proxy`, real
-IPython kernels over ZeroMQ); the others run focused server-layer subsets.
+IPython kernels over ZeroMQ), and mitmproxy drives mitmweb's real
+`tornado.web.Application` over a live socket; the others run focused
+server-layer subsets.
 
 ## How this is used
 
@@ -106,16 +114,17 @@ package running well clear of its own floor.
 | ipykernel      |  7% |
 | panel          | 31% |
 | voila          | 20% |
-| **merged**     | **59%** |
+| mitmproxy      | 51% |
+| **merged**     | **61%** |
 
 (ipykernel and distributed look low because they use only narrow slices of
 Tornado — async primitives / the asyncio bridge, and the bare TCP layer,
 respectively — but cover those slices well; see their
 `packages/<name>/README.md`.)
 
-Merged coverage was 61% when streamlit was still in the set. Dropping it cost
-only two points despite it being the single highest-coverage package (45%),
-because the other web-layer packages already covered most of the same ground.
+Merged coverage was 61% when streamlit was still in the set and fell to 59%
+when it was dropped. Adding mitmproxy, now the single highest-coverage package
+(51%), brought it back to 61%.
 
 ## Standing limitations & decisions
 
@@ -124,7 +133,7 @@ mind before assuming a number can simply be pushed up.
 
 - **streamlit is gone.** It moved to Starlette/uvicorn in 1.57.0 and no longer
   depends on Tornado at all, so it failed the testbed's first selection
-  criterion. The set is nine packages until a replacement is selected. See
+  criterion. mitmproxy replaced it; the selection reasoning is in
   [`packages/README.md`](packages/README.md).
 
 - **`tornado.auth` is stuck at ~18%.** Flower is the *only* package here that
