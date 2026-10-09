@@ -191,12 +191,12 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           # Without a suffix every matrix job computes an identical cache key,
-          # so the nine of them race to reserve one entry and eight fail to
+          # so they all race to reserve one entry and all but one fail to
           # save. The interpreter is in here too, so changing python_version
           # does not silently reuse caches built against the old one.
           cache-suffix: ${{ matrix.package }}-py${{ needs.plan.outputs.python_version }}
           # The default glob matches every packages/*/requirements.txt, which
-          # would make one dependabot bump invalidate all nine caches. Key each
+          # would make one dependabot bump invalidate every package's cache. Key each
           # job on its own pin plus the shared build constraints.
           cache-dependency-glob: |
             packages/${{ matrix.package }}/requirements.txt

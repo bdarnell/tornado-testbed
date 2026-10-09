@@ -89,8 +89,29 @@ chosen by a combination of GitHub stars and PyPI download volume. Each:
   frozen at 1.56.0 — a pin that could never move again would have gone on
   reporting coverage for code the ecosystem is leaving behind.
 
-  Restoring the set to ten means redoing the selection work for a replacement,
-  which has not been done yet.
+  It was replaced by **mitmproxy**; see below.
+
+### Added
+
+- **mitmproxy** (rank 10) — replaced streamlit. Candidates were PyPI packages
+  whose *current* release still declares `tornado` directly, then judged on
+  popularity and on whether the Tornado-facing part of their suite runs
+  unattended:
+
+  | candidate  | stars | Tornado usage | verdict |
+  |------------|------:|---------------|---------|
+  | mitmproxy  | ~40k  | `mitmweb` is a `tornado.web` app: REST handlers, xsrf + signed cookies, WebSocket server *and* client, gzip transform | **chosen** — most-starred direct dependent, actively maintained, and its web suite runs in seconds over a live server |
+  | luigi      | ~18k  | the central scheduler's small `tornado.web` server | runner-up; one test file and a few handlers, so far less signal |
+  | thumbor    | ~10k  | Tornado app plus `AsyncHTTPClient` / `curl_httpclient` image loading | the only candidate that would exercise `curl_httpclient`, but it is far less used and its suite needs native imaging libraries |
+  | jupyterlab |  ~15k | `jupyter_server` extension | almost entirely the Tornado surface jupyter_server and notebook already cover |
+  | salt       |  ~15k | event bus / netapi on Tornado | suite needs a running master/minion; impractical here |
+
+  jupyter_client, ipyparallel and terminado also qualify, but each overlaps
+  the Jupyter stack already in the set and is less popular than mitmproxy.
+
+  mitmproxy caps Tornado tightly (`<=6.5.5` at 12.2.3) and raises the cap as it
+  validates new releases — exactly the consumer a pre-release gate should be
+  checking. See [`mitmproxy/README.md`](mitmproxy/README.md).
 
 ## Adding a package
 

@@ -66,7 +66,7 @@ fi
 echo "Canonical tornado source: ${canonical_tornado}"
 
 # Remap config: every package's own site-packages tornado is rewritten to the
-# canonical one, so data recorded in nine different venvs describes one library.
+# canonical one, so data recorded in each package's own venv describes one library.
 MERGE_CFG="${COV_DIR}/.coveragerc-merge"
 {
     echo "[paths]"
