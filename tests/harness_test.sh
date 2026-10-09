@@ -93,6 +93,13 @@ else
     ok "a numeric selector is rejected"
 fi
 
+out="$(cd "${root}" && python3 scripts/pkglib.py apt alpha 2>&1)"
+check "no apt_packages means nothing to install" "" "${out}"
+
+echo 'apt_packages=gifsicle libjpeg-turbo-progs' >> "${root}/packages/beta/package.env"
+out="$(cd "${root}" && python3 scripts/pkglib.py apt beta 2>&1)"
+check "apt_packages is reported for the workflow" "gifsicle libjpeg-turbo-progs" "${out}"
+
 out="$(cd "${root}" && python3 scripts/pkglib.py env alpha 2>&1 | grep '^PKG_REF=')"
 check "ref is derived from tag_template + pin" "PKG_REF=v1.0.0" "${out}"
 

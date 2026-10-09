@@ -24,10 +24,12 @@ and verifies that is what actually ends up imported.
 | mitmproxy      | v12.2.3    | 63 passed, 1 skipped     | PASS   | 7s   |
 | notebook       | v7.6.2     | 6 passed                 | PASS   | 7s   |
 | panel          | v1.9.4     | 49 passed, 2 skipped     | PASS   | 11s  |
+| thumbor        | 7.8.0      | 636 passed, 9 skipped    | PASS   | 34s  |
 | voila          | v0.5.13    | 2 passed                 | PASS   | 10s  |
 
-**10/10 green.** All rows but mitmproxy's are from the run that dropped
-streamlit; mitmproxy's is from the run that added it, against the same 6.5.10. In that full run
+**11/11 green.** mitmproxy's and thumbor's rows are from the runs that added
+them; the rest are from the run that dropped streamlit, all against 6.5.10. In
+the full run made when mitmproxy was added,
 jupyter_server had one failure, `test_restart_kernel[jp_server_config0]`: it
 gives a closed WebSocket one second to drop out of the kernel's connection
 count, which it missed under load, and it passed 3/3 when re-run on its own.
@@ -114,8 +116,9 @@ package running well clear of its own floor.
 | mitmproxy      | 51% |
 | notebook       | 22% |
 | panel          | 31% |
+| thumbor        | 40% |
 | voila          | 20% |
-| **merged**     | **61%** |
+| **merged**     | **64%** |
 
 (ipykernel and distributed look low because they use only narrow slices of
 Tornado — async primitives / the asyncio bridge, and the bare TCP layer,
@@ -124,7 +127,8 @@ respectively — but cover those slices well; see their
 
 Merged coverage was 61% when streamlit was still in the set and fell to 59%
 when it was dropped. Adding mitmproxy, now the single highest-coverage package
-(51%), brought it back to 61%.
+(51%), brought it back to 61%; adding thumbor took it to 64%, mostly by moving
+`tornado.curl_httpclient` from 1% to 62% — no other package touches it.
 
 ## Standing limitations & decisions
 
@@ -151,8 +155,11 @@ mind before assuming a number can simply be pushed up.
   and a plain SIGTERM — i.e. they can hang the whole run. See
   `packages/voila/README.md` to opt in by hand.
 
-- **System prerequisites for the live-server suites:** **node/npm** must be on
-  PATH so jupyterhub can install/run `configurable-http-proxy`.
+- **System prerequisites:** **node/npm** must be on PATH so jupyterhub can
+  install/run `configurable-http-proxy`, and **gifsicle** and **jpegtran** for
+  thumbor's image pipeline. CI installs the latter from thumbor's
+  `apt_packages`; locally, thumbor's `setup.sh` stops with `SETUP_FAIL` if they
+  are missing rather than letting ~10 tests fail with 504s.
 
 - **Build-time dependencies are pinned** in `build-constraints.txt`. Packages do
   not pin their own build backends, so a backend release can stop a downstream
@@ -186,6 +193,12 @@ mind before assuming a number can simply be pushed up.
 - **`relative_files=true`** in a project's coverage config yields relative paths
   that break standalone `coverage html` (the report shows 0%); pass
   `--cov-config=/dev/null` to force absolute paths.
+- **A project's own `branch = True`** makes its coverage data impossible to
+  combine with everyone else's statement data, and the merged report fails
+  outright ("Can't combine branch coverage data with statement data") —
+  leaving the *previous* merged HTML in place. thumbor's `.coveragerc` does
+  this; `--cov-config=/dev/null` in its `test.sh` is the fix. Pass it for any
+  new package too.
 - **GC-timing `ResourceWarning`s** (e.g. panel's leaked server sockets) can be
   promoted to errors by pytest's unraisable-exception sweep even when every test
   passes; `-p no:unraisableexception` disables just that sweep.

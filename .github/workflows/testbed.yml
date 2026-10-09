@@ -222,6 +222,20 @@ jobs:
             echo "TORNADO_SPEC=${SPEC}" >> "$GITHUB_ENV"
           fi
 
+      # Command-line tools a package's suite shells out to (apt_packages in its
+      # package.env). The package's own setup.sh checks they are present, so
+      # a missing one is a SETUP_FAIL rather than a red test run.
+      - name: Install system packages
+        env:
+          PACKAGE: ${{ matrix.package }}
+        run: |
+          apt_packages="$(python3 scripts/pkglib.py apt "${PACKAGE}")"
+          if [[ -n "${apt_packages}" ]]; then
+            sudo apt-get update -q
+            # shellcheck disable=SC2086  # a space-separated list, split on purpose
+            sudo apt-get install -y -q --no-install-recommends ${apt_packages}
+          fi
+
       # matrix.package goes through the environment rather than being expanded
       # into the shell command, so the run block holds no template expansion.
       - name: Check out ${{ matrix.package }}

@@ -37,7 +37,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 PKGDEFS_DIR = ROOT / "packages"
 
 REQUIRED_KEYS = {"repo", "tag_template", "subdir"}
-OPTIONAL_KEYS = {"install_method", "pypi_extra_deps", "min_coverage"}
+OPTIONAL_KEYS = {"install_method", "pypi_extra_deps", "min_coverage", "apt_packages"}
 KNOWN_KEYS = REQUIRED_KEYS | OPTIONAL_KEYS
 INSTALL_METHODS = {"", "editable", "pypi"}
 
@@ -61,6 +61,7 @@ class Package:
     install_method: str
     pypi_extra_deps: str
     min_coverage: int | None
+    apt_packages: str
     dist_name: str
     version: str
     directory: pathlib.Path
@@ -89,6 +90,7 @@ class Package:
             "PKG_INSTALL_METHOD": self.install_method or "editable",
             "PKG_PYPI_EXTRA_DEPS": self.pypi_extra_deps,
             "PKG_MIN_COVERAGE": "" if self.min_coverage is None else str(self.min_coverage),
+            "PKG_APT_PACKAGES": self.apt_packages,
             "PKG_VERSION": self.version,
             "PKG_DIST_NAME": self.dist_name,
             "PKG_DIR": str(self.directory),
@@ -188,6 +190,7 @@ def load(name: str) -> Package:
         install_method=install_method,
         pypi_extra_deps=env.get("pypi_extra_deps", ""),
         min_coverage=min_coverage,
+        apt_packages=env.get("apt_packages", ""),
         dist_name=dist_name,
         version=version,
         directory=directory,
@@ -271,6 +274,9 @@ def main(argv: list[str]) -> int:
             print(resolve(args[0]).name)
         elif cmd == "env":
             print(resolve(args[0]).shell_env())
+        elif cmd == "apt":
+            # System packages the workflow installs before running this one.
+            print(resolve(args[0]).apt_packages)
         elif cmd == "refs":
             for pkg in load_all():
                 print(f"{pkg.name}\t{pkg.dist_name}=={pkg.version}\t{pkg.ref}")

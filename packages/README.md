@@ -33,6 +33,7 @@ Parsed as strict `key=value`, never sourced — the matrix job needs `repo` and
 | `subdir` | yes | directory within the checkout to run tests from (`.` for most). |
 | `install_method` | no | `editable` (default) or `pypi`. |
 | `pypi_extra_deps` | no | extra specs to install alongside, for `pypi` installs. |
+| `apt_packages` | no | space-separated Debian/Ubuntu packages the workflow installs before the run, for command-line tools the suite shells out to. Pair it with a `setup.sh` check so a missing tool is a `SETUP_FAIL`, not a red test. |
 | `min_coverage` | no | percent of Tornado this package must cover. Below it, a *passing* run fails as `COVERAGE_LOW`. |
 
 There is no ranking: packages are run and reported in alphabetical order, and
@@ -104,7 +105,7 @@ chosen by a combination of GitHub stars and PyPI download volume. Each:
   |------------|------:|---------------|---------|
   | mitmproxy  | ~40k  | `mitmweb` is a `tornado.web` app: REST handlers, xsrf + signed cookies, WebSocket server *and* client, gzip transform | **chosen** — most-starred direct dependent, actively maintained, and its web suite runs in seconds over a live server |
   | luigi      | ~18k  | the central scheduler's small `tornado.web` server | runner-up; one test file and a few handlers, so far less signal |
-  | thumbor    | ~10k  | Tornado app plus `AsyncHTTPClient` / `curl_httpclient` image loading | the only candidate that would exercise `curl_httpclient`, but it is far less used and its suite needs native imaging libraries |
+  | thumbor    | ~10k  | Tornado app plus `AsyncHTTPClient` / `curl_httpclient` image loading | also added (below), for `curl_httpclient` |
   | jupyterlab |  ~15k | `jupyter_server` extension | almost entirely the Tornado surface jupyter_server and notebook already cover |
   | salt       |  ~15k | event bus / netapi on Tornado | suite needs a running master/minion; impractical here |
 
@@ -114,6 +115,12 @@ chosen by a combination of GitHub stars and PyPI download volume. Each:
   mitmproxy caps Tornado tightly (`<=6.5.5` at 12.2.3) and raises the cap as it
   validates new releases — exactly the consumer a pre-release gate should be
   checking. See [`mitmproxy/README.md`](mitmproxy/README.md).
+
+- **thumbor** — added alongside mitmproxy, not instead of anything. Its
+  Tornado usage is narrower, but it is the only package in the set that
+  exercises `tornado.curl_httpclient`; without it a regression there could not
+  turn anything red. It brings two system tools (`gifsicle`, `jpegtran`),
+  declared in `apt_packages`. See [`thumbor/README.md`](thumbor/README.md).
 
 ## Adding a package
 
