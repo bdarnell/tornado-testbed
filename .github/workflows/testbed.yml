@@ -19,7 +19,7 @@ on:
         required: false
         default: "git+https://github.com/tornadoweb/tornado.git@master"
       packages:
-        description: "Space-separated package names or ranks to run (default: all)"
+        description: "Space-separated package names to run (default: all)"
         type: string
         required: false
         default: ""

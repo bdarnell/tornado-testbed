@@ -13,21 +13,21 @@ and verifies that is what actually ends up imported.
 
 ## Current results (tornado 6.5.10, Python 3.13)
 
-| #  | Package        | Ref        | Tests run                | Status | Time |
-|----|----------------|------------|--------------------------|--------|------|
-| 1  | bokeh          | 3.10.0     | 24 passed                | PASS   | 6s   |
-| 2  | jupyter_server | v2.21.1    | 1136 passed, 34 skipped  | PASS   | 297s |
-| 3  | notebook       | v7.6.2     | 6 passed                 | PASS   | 7s   |
-| 4  | jupyterhub     | 6.0.1      | 213 passed               | PASS   | 158s |
-| 5  | distributed    | 2026.8.0   | 21 passed                | PASS   | 5s   |
-| 6  | flower         | v2.1.0     | 251 passed, 2 skipped    | PASS   | 6s   |
-| 7  | ipykernel      | v7.3.0     | 181 passed, 26 skipped   | PASS   | 90s  |
-| 8  | panel          | v1.9.4     | 49 passed, 2 skipped     | PASS   | 11s  |
-| 9  | voila          | v0.5.13    | 2 passed                 | PASS   | 10s  |
-| 10 | mitmproxy      | v12.2.3    | 63 passed, 1 skipped     | PASS   | 7s   |
+| Package        | Ref        | Tests run                | Status | Time |
+|----------------|------------|--------------------------|--------|------|
+| bokeh          | 3.10.0     | 24 passed                | PASS   | 6s   |
+| distributed    | 2026.8.0   | 21 passed                | PASS   | 5s   |
+| flower         | v2.1.0     | 251 passed, 2 skipped    | PASS   | 6s   |
+| ipykernel      | v7.3.0     | 181 passed, 26 skipped   | PASS   | 90s  |
+| jupyter_server | v2.21.1    | 1136 passed, 34 skipped  | PASS   | 297s |
+| jupyterhub     | 6.0.1      | 213 passed               | PASS   | 158s |
+| mitmproxy      | v12.2.3    | 63 passed, 1 skipped     | PASS   | 7s   |
+| notebook       | v7.6.2     | 6 passed                 | PASS   | 7s   |
+| panel          | v1.9.4     | 49 passed, 2 skipped     | PASS   | 11s  |
+| voila          | v0.5.13    | 2 passed                 | PASS   | 10s  |
 
-**10/10 green.** Rows 1–9 are from the run that dropped streamlit; mitmproxy's
-row is from the run that added it, against the same 6.5.10. In that full run
+**10/10 green.** All rows but mitmproxy's are from the run that dropped
+streamlit; mitmproxy's is from the run that added it, against the same 6.5.10. In that full run
 jupyter_server had one failure, `test_restart_kernel[jp_server_config0]`: it
 gives a closed WebSocket one second to drop out of the kernel's connection
 count, which it missed under load, and it passed 3/3 when re-run on its own.
@@ -106,15 +106,15 @@ package running well clear of its own floor.
 | Package        | tornado coverage |
 |----------------|:----------------:|
 | bokeh          | 39% |
-| jupyter_server | 42% |
-| notebook       | 22% |
-| jupyterhub     | 36% |
 | distributed    |  9% |
 | flower         | 43% |
 | ipykernel      |  7% |
+| jupyter_server | 42% |
+| jupyterhub     | 36% |
+| mitmproxy      | 51% |
+| notebook       | 22% |
 | panel          | 31% |
 | voila          | 20% |
-| mitmproxy      | 51% |
 | **merged**     | **61%** |
 
 (ipykernel and distributed look low because they use only narrow slices of

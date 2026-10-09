@@ -28,13 +28,15 @@ Parsed as strict `key=value`, never sourced — the matrix job needs `repo` and
 
 | key | required | meaning |
 |---|---|---|
-| `rank` | yes | popularity rank, contiguous from 1. Orders the reports and doubles as a selector: `run_one.sh 7`. |
 | `repo` | yes | git URL to clone. |
 | `tag_template` | yes | how to build the git tag from the version, e.g. `v{version}` or `{version}`. |
 | `subdir` | yes | directory within the checkout to run tests from (`.` for most). |
 | `install_method` | no | `editable` (default) or `pypi`. |
 | `pypi_extra_deps` | no | extra specs to install alongside, for `pypi` installs. |
 | `min_coverage` | no | percent of Tornado this package must cover. Below it, a *passing* run fails as `COVERAGE_LOW`. |
+
+There is no ranking: packages are run and reported in alphabetical order, and
+selected by name.
 
 **The git ref is derived, never stored:** `tag_template` applied to the version
 in `requirements.txt`. Storing both invites them to disagree, and a testbed
@@ -82,7 +84,7 @@ chosen by a combination of GitHub stars and PyPI download volume. Each:
 
 ### Removed
 
-- **streamlit** — was rank 1, and the single largest contributor to merged
+- **streamlit** — was the most popular entry, and the single largest contributor to merged
   Tornado coverage (~45%). It migrated to Starlette/uvicorn in **1.57.0**;
   1.64.0 declares no dependency on Tornado and contains no `tornado` imports at
   all. It no longer meets the first criterion, so it was dropped rather than
@@ -93,7 +95,7 @@ chosen by a combination of GitHub stars and PyPI download volume. Each:
 
 ### Added
 
-- **mitmproxy** (rank 10) — replaced streamlit. Candidates were PyPI packages
+- **mitmproxy** — replaced streamlit. Candidates were PyPI packages
   whose *current* release still declares `tornado` directly, then judged on
   popularity and on whether the Tornado-facing part of their suite runs
   unattended:
@@ -122,8 +124,7 @@ python3 scripts/validate_packages.py --check-refs
 scripts/setup.sh <name> && scripts/run_one.sh <name>
 ```
 
-Give it a `rank` no other package uses, and add it to `.github/dependabot.yml`
-if the `directories:` glob does not already cover it.
+Add it to `.github/dependabot.yml` if the `directories:` glob does not already cover it.
 
 ## Skipping policy
 

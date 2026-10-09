@@ -44,12 +44,12 @@ if [[ -z "${UV_BUILD_CONSTRAINT:-}" && -f "${ROOT_DIR}/build-constraints.txt" ]]
     export UV_BUILD_CONSTRAINT="${ROOT_DIR}/build-constraints.txt"
 fi
 
-# All package names, in rank (popularity) order.
+# All package names, in alphabetical order.
 pkg_names() { python3 "${PKGLIB}" names; }
 
 pkg_count() { python3 "${PKGLIB}" count; }
 
-# pkg_resolve <name-or-rank> -> canonical name
+# pkg_resolve <name> -> canonical name (errors on an unknown package)
 pkg_resolve() { python3 "${PKGLIB}" resolve "$1"; }
 
 # pkg_load <name> -- emit shell assignments for one package's definition.

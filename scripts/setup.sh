@@ -3,7 +3,7 @@
 # by each package's pin.
 #
 #   scripts/setup.sh                  every package
-#   scripts/setup.sh flower bokeh     just these (by name or rank)
+#   scripts/setup.sh flower bokeh     just these, by name
 #
 # Safe to re-run: an existing checkout is fetched and checked out at the ref.
 set -euo pipefail

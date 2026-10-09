@@ -41,15 +41,14 @@ new_root() {
     echo "${root}"
 }
 
-# make_pkg <root> <name> <rank> <test-body> [extra package.env lines]
+# make_pkg <root> <name> <test-body> [extra package.env lines]
 # Writes a synthetic package whose "checkout" is an installable stub.
 make_pkg() {
-    local root="$1" name="$2" rank="$3" body="$4" extra="${5:-}"
+    local root="$1" name="$2" body="$3" extra="${4:-}"
     local dir="${root}/packages/${name}"
     mkdir -p "${dir}"
     printf '%s==1.0.0\n' "${name}" > "${dir}/requirements.txt"
     {
-        echo "rank=${rank}"
         echo "repo=https://example.invalid/${name}"
         echo "tag_template=v{version}"
         echo "subdir=."
@@ -76,16 +75,23 @@ EOF
 echo "== package definitions =="
 
 root="$(new_root)"
-make_pkg "${root}" alpha 1 'true'
-make_pkg "${root}" beta 2 'true'
+# Created out of order, to show the order comes from the names.
+make_pkg "${root}" beta 'true'
+make_pkg "${root}" alpha 'true'
 out="$(cd "${root}" && python3 scripts/validate_packages.py 2>&1)"
 check "a well-formed pair of packages validates" "checked 2 package(s): OK" "${out}"
 
 out="$(cd "${root}" && python3 scripts/pkglib.py matrix "" 2>&1)"
-check "matrix is rank-ordered JSON" '["alpha", "beta"]' "${out}"
+check "matrix is alphabetical JSON" '["alpha", "beta"]' "${out}"
 
-out="$(cd "${root}" && python3 scripts/pkglib.py resolve 2 2>&1)"
-check "rank resolves to a name" "beta" "${out}"
+out="$(cd "${root}" && python3 scripts/pkglib.py resolve beta 2>&1)"
+check "a name resolves to itself" "beta" "${out}"
+
+if (cd "${root}" && python3 scripts/pkglib.py resolve 2 >/dev/null 2>&1); then
+    bad "a numeric selector is rejected" "resolve accepted '2'"
+else
+    ok "a numeric selector is rejected"
+fi
 
 out="$(cd "${root}" && python3 scripts/pkglib.py env alpha 2>&1 | grep '^PKG_REF=')"
 check "ref is derived from tag_template + pin" "PKG_REF=v1.0.0" "${out}"
@@ -96,8 +102,8 @@ reject() {
     local desc="$1" mutate="$2"
     local r
     r="$(new_root)"
-    make_pkg "${r}" alpha 1 'true'
-    make_pkg "${r}" beta 2 'true'
+    make_pkg "${r}" alpha 'true'
+    make_pkg "${r}" beta 'true'
     ( cd "${r}" && eval "${mutate}" )
     if (cd "${r}" && python3 scripts/validate_packages.py >/dev/null 2>&1); then
         bad "${desc}" "validate_packages.py accepted it"
@@ -105,7 +111,7 @@ reject() {
         ok "${desc}"
     fi
 }
-reject "duplicate rank is rejected"         "sed -i 's/^rank=2/rank=1/' packages/beta/package.env"
+reject "a leftover rank key is rejected"    "echo 'rank=1' >> packages/beta/package.env"
 reject "missing required key is rejected"   "sed -i '/^subdir=/d' packages/beta/package.env"
 reject "unknown key is rejected"            "echo 'tag_tempalte=v{version}' >> packages/beta/package.env"
 reject "tag_template without {version} is rejected" \
@@ -152,8 +158,8 @@ check "every package appears in the table" "1" "${out}"
 echo "== changed_packages.sh =="
 
 root="$(new_root)"
-make_pkg "${root}" alpha 1 'true'
-make_pkg "${root}" beta 2 'true'
+make_pkg "${root}" alpha 'true'
+make_pkg "${root}" beta 'true'
 (
     cd "${root}" || exit 1
     git init -q . && git add -A && git -c user.email=t@t -c user.name=t commit -qm base
@@ -201,7 +207,7 @@ else
         done
         local r
         r="$(new_root)"
-        make_pkg "${r}" subject 1 "${body}" "${extra}"
+        make_pkg "${r}" subject "${body}" "${extra}"
         ( cd "${r}" && env "${envs[@]}" ./scripts/run_one.sh subject >/dev/null 2>&1 )
         local rc=$?
         local status
@@ -236,7 +242,7 @@ else
 
     # A failing setup hook must not be reported as a test failure.
     r="$(new_root)"
-    make_pkg "${r}" subject 1 'true'
+    make_pkg "${r}" subject 'true'
     printf '#!/usr/bin/env bash\nexit 1\n' > "${r}/packages/subject/setup.sh"
     chmod +x "${r}/packages/subject/setup.sh"
     ( cd "${r}" && TORNADO_SPEC=tornado ./scripts/run_one.sh subject >/dev/null 2>&1 )
@@ -287,7 +293,7 @@ else
     # without the file must still work.
     r="$(new_root)"
     rm -f "${r}/build-constraints.txt"
-    make_pkg "${r}" subject 1 'true'
+    make_pkg "${r}" subject 'true'
     ( cd "${r}" && TORNADO_SPEC=tornado ./scripts/run_one.sh subject >/dev/null 2>&1 )
     rc=$?
     status="$(awk -F= '/^status=/ {print $2}' "${r}/results/subject.txt" 2>/dev/null)"

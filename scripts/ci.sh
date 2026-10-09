@@ -17,7 +17,7 @@
 #                   - a built wheel         "/path/to/tornado-7.0-py3-none-any.whl"
 #                   - a branch/tag/SHA      "git+https://github.com/tornadoweb/tornado.git@BRANCH"
 #                 Defaults to "tornado" (latest PyPI release).
-#   ONLY          Optional space-separated list of package names/ranks to run
+#   ONLY          Optional space-separated list of package names to run
 #                 instead of everything.
 #   COVERAGE      "1" (default) measures coverage and builds HTML reports.
 #   FAIL_ON_REGRESSION

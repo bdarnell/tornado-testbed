@@ -42,10 +42,9 @@ Docker is not required; each package is isolated in its own `uv` venv.
 ./scripts/setup.sh
 ./scripts/setup.sh flower bokeh
 
-# Run everything, or one package by name or rank
+# Run everything, or one package by name
 ./scripts/run_all.sh
 ./scripts/run_one.sh flower
-./scripts/run_one.sh 7
 
 # Test against a specific Tornado build
 TORNADO_SPEC="tornado==6.5.1"                      ./scripts/run_one.sh flower
