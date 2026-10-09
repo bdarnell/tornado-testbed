@@ -133,6 +133,24 @@ reject "non-integer min_coverage is rejected" \
 reject "out-of-range min_coverage is rejected" \
                                             "echo 'min_coverage=101' >> packages/beta/package.env"
 
+# dependabot.yml must list each package directory explicitly: a missing entry
+# means a pin nobody bumps, and a "/packages/*" glob opens every bump twice.
+dependabot() {
+    mkdir -p .github
+    printf 'version: 2\nupdates:\n  - package-ecosystem: "pip"\n    directories:\n' > .github/dependabot.yml
+    local d
+    for d in "$@"; do printf '      - "%s"\n' "${d}" >> .github/dependabot.yml; done
+}
+r="$(new_root)"
+make_pkg "${r}" alpha 'true'
+make_pkg "${r}" beta 'true'
+out="$(cd "${r}" && dependabot /packages/alpha /packages/beta && python3 scripts/validate_packages.py 2>&1)"
+check "a dependabot.yml listing every package validates" "checked 2 package(s): OK" "${out}"
+reject "a package missing from dependabot.yml is rejected" "dependabot /packages/alpha"
+reject "a dependabot.yml entry with no package is rejected" \
+                                            "dependabot /packages/alpha /packages/beta /packages/gamma"
+reject "a dependabot.yml glob is rejected"  "dependabot '/packages/*'"
+
 echo "== report.sh =="
 
 fixtures="$(mktemp -d -p "${TMPROOT}")"

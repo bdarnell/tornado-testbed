@@ -131,7 +131,8 @@ python3 scripts/validate_packages.py --check-refs
 scripts/setup.sh <name> && scripts/run_one.sh <name>
 ```
 
-Add it to `.github/dependabot.yml` if the `directories:` glob does not already cover it.
+Add `/packages/<name>` to the `directories:` list in `.github/dependabot.yml`;
+`validate_packages.py` fails until you do.
 
 ## Skipping policy
 

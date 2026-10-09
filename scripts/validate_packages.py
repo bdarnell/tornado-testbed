@@ -17,12 +17,54 @@ from __future__ import annotations
 
 import argparse
 import pathlib
+import re
 import sys
 
 # pkglib lives beside this script; importable however this file is invoked.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import pkglib  # noqa: E402
+
+
+DEPENDABOT_CONFIG = pkglib.ROOT / ".github" / "dependabot.yml"
+
+# A `directories:` entry under packages/, quoted or not. Line-based rather than
+# a YAML parse so this stays dependency-free; the file is ours and simple.
+DEPENDABOT_DIR_RE = re.compile(r"""^\s*-\s*["']?/packages/(?P<rest>[^"'\s]*)["']?\s*$""")
+
+
+def check_dependabot(packages: list[pkglib.Package]) -> list[str]:
+    """Check dependabot.yml lists exactly the package directories, by name.
+
+    Not a glob: with "/packages/*" dependabot opened every bump twice (see the
+    comment in dependabot.yml). An explicit list needs this check so a new
+    package is not silently left without updates.
+    """
+    if not DEPENDABOT_CONFIG.is_file():
+        # The harness tests build throwaway roots without .github/.
+        return []
+    listed: list[str] = []
+    problems: list[str] = []
+    for line in DEPENDABOT_CONFIG.read_text().splitlines():
+        match = DEPENDABOT_DIR_RE.match(line)
+        if not match:
+            continue
+        rest = match.group("rest").rstrip("/")
+        if not pkglib.NAME_RE.match(rest):
+            problems.append(
+                f"dependabot.yml: '/packages/{rest}' is not a single package "
+                "directory; list each one explicitly (a glob opens duplicate PRs)"
+            )
+            continue
+        listed.append(rest)
+    names = {pkg.name for pkg in packages}
+    for name in sorted(names - set(listed)):
+        problems.append(f"dependabot.yml: /packages/{name} is missing from directories:")
+    for name in sorted(set(listed) - names):
+        problems.append(f"dependabot.yml: /packages/{name} is listed but no such package exists")
+    for name in sorted({n for n in listed if listed.count(n) > 1}):
+        problems.append(f"dependabot.yml: /packages/{name} is listed more than once")
+    return problems
 
 
 def main() -> int:
@@ -60,6 +102,7 @@ def main() -> int:
     problems: list[str] = []
     for pkg in packages:
         problems.extend(pkglib.check_files(pkg))
+    problems.extend(check_dependabot(packages))
 
     if args.check_refs:
         for pkg in packages:
