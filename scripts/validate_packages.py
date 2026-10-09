@@ -40,7 +40,7 @@ def main() -> int:
     args = parser.parse_args()
 
     # Loading is itself most of the validation: pkglib rejects unknown and
-    # missing keys, a non-integer rank, duplicate ranks, a tag_template without
+    # missing keys, a tag_template without
     # {version}, and a requirements.txt that is not exactly one name==version.
     try:
         packages = pkglib.load_all()

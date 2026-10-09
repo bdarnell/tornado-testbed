@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run the test suite for a single package (by index or name) in an isolated
+# Run the test suite for a single package (by name) in an isolated
 # uv-managed virtualenv. Each invocation:
 #   1. Creates a fresh .venv under the checkout
 #   2. Installs the package (editable with its test extras, or the pinned wheel)
@@ -55,7 +55,7 @@ TIMEOUT_SECS="${TIMEOUT_SECS:-900}"
 RETRY_TIMEOUT="${RETRY_TIMEOUT:-1}"
 
 usage() {
-    echo "usage: $0 <name-or-rank>" >&2
+    echo "usage: $0 <name>" >&2
     exit 2
 }
 

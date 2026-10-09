@@ -32,6 +32,9 @@ REPORT.md              current state of the harness
 - `git`, and a POSIX shell with `python3`
 - `node`/`npm` on PATH — jupyterhub's live-server tests need
   `configurable-http-proxy`
+- `gifsicle` on PATH — thumbor's image pipeline shells out to it
+  (Debian/Ubuntu: `apt-get install gifsicle`; CI installs it from thumbor's
+  `apt_packages`)
 
 Docker is not required; each package is isolated in its own `uv` venv.
 
@@ -42,10 +45,9 @@ Docker is not required; each package is isolated in its own `uv` venv.
 ./scripts/setup.sh
 ./scripts/setup.sh flower bokeh
 
-# Run everything, or one package by name or rank
+# Run everything, or one package by name
 ./scripts/run_all.sh
 ./scripts/run_one.sh flower
-./scripts/run_one.sh 7
 
 # Test against a specific Tornado build
 TORNADO_SPEC="tornado==6.5.1"                      ./scripts/run_one.sh flower
@@ -82,6 +84,11 @@ It commits nothing: results are read from the build log and the uploaded
 `.github/workflows/testbed.yml` drives it. Run it from the Actions tab with a
 `tornado_spec` input, or call it as a reusable workflow from another repository
 — which is how tornado's own release build uses it.
+
+Each package runs as its own job. A failing package turns its own job red and
+prints its full log there (passing packages fold theirs into a collapsed
+group); the remaining packages and the final report still run. With
+`fail_on_regression` off, per-package jobs stay green, like the report.
 
 ## Adding or changing a package
 

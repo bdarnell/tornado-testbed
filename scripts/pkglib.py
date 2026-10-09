@@ -36,8 +36,8 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PKGDEFS_DIR = ROOT / "packages"
 
-REQUIRED_KEYS = {"rank", "repo", "tag_template", "subdir"}
-OPTIONAL_KEYS = {"install_method", "pypi_extra_deps", "min_coverage"}
+REQUIRED_KEYS = {"repo", "tag_template", "subdir"}
+OPTIONAL_KEYS = {"install_method", "pypi_extra_deps", "min_coverage", "apt_packages"}
 KNOWN_KEYS = REQUIRED_KEYS | OPTIONAL_KEYS
 INSTALL_METHODS = {"", "editable", "pypi"}
 
@@ -55,13 +55,13 @@ class PackageError(Exception):
 @dataclasses.dataclass(frozen=True)
 class Package:
     name: str
-    rank: int
     repo: str
     tag_template: str
     subdir: str
     install_method: str
     pypi_extra_deps: str
     min_coverage: int | None
+    apt_packages: str
     dist_name: str
     version: str
     directory: pathlib.Path
@@ -84,13 +84,13 @@ class Package:
         """Shell assignments for `eval "$(pkglib.py env <name>)"`."""
         pairs = {
             "PKG_NAME": self.name,
-            "PKG_RANK": str(self.rank),
             "PKG_REPO": self.repo,
             "PKG_REF": self.ref,
             "PKG_SUBDIR": self.subdir,
             "PKG_INSTALL_METHOD": self.install_method or "editable",
             "PKG_PYPI_EXTRA_DEPS": self.pypi_extra_deps,
             "PKG_MIN_COVERAGE": "" if self.min_coverage is None else str(self.min_coverage),
+            "PKG_APT_PACKAGES": self.apt_packages,
             "PKG_VERSION": self.version,
             "PKG_DIST_NAME": self.dist_name,
             "PKG_DIR": str(self.directory),
@@ -158,13 +158,6 @@ def load(name: str) -> Package:
             f"{directory/'package.env'}: install_method must be one of "
             f"{sorted(INSTALL_METHODS)}, got {install_method!r}"
         )
-    try:
-        rank = int(env["rank"])
-    except ValueError:
-        raise PackageError(
-            f"{directory/'package.env'}: rank must be an integer, got {env['rank']!r}"
-        ) from None
-
     # The floor below which this package's tornado coverage is treated as a
     # broken test command rather than a real measurement. Absent means unchecked.
     min_coverage: int | None = None
@@ -191,13 +184,13 @@ def load(name: str) -> Package:
 
     return Package(
         name=name,
-        rank=rank,
         repo=env["repo"],
         tag_template=env["tag_template"],
         subdir=env["subdir"],
         install_method=install_method,
         pypi_extra_deps=env.get("pypi_extra_deps", ""),
         min_coverage=min_coverage,
+        apt_packages=env.get("apt_packages", ""),
         dist_name=dist_name,
         version=version,
         directory=directory,
@@ -205,26 +198,14 @@ def load(name: str) -> Package:
 
 
 def load_all() -> list[Package]:
-    """Every package, in rank order (the popularity order the reports use)."""
+    """Every package, in alphabetical order (the order the reports use)."""
     names = sorted(p.name for p in PKGDEFS_DIR.iterdir() if (p / "package.env").is_file())
-    packages = [load(n) for n in names]
-    ranks = [p.rank for p in packages]
-    if len(set(ranks)) != len(ranks):
-        dupes = sorted({r for r in ranks if ranks.count(r) > 1})
-        raise PackageError(f"duplicate rank(s) across packages: {dupes}")
-    return sorted(packages, key=lambda p: p.rank)
+    return [load(n) for n in names]
 
 
 def resolve(selector: str) -> Package:
-    """Look up a package by name or by 1-based rank."""
-    packages = load_all()
-    if selector.isdigit():
-        wanted = int(selector)
-        for pkg in packages:
-            if pkg.rank == wanted:
-                return pkg
-        raise PackageError(f"no package with rank {wanted}")
-    for pkg in packages:
+    """Look up a package by name."""
+    for pkg in load_all():
         if pkg.name == selector:
             return pkg
     raise PackageError(f"unknown package: {selector}")
@@ -293,9 +274,12 @@ def main(argv: list[str]) -> int:
             print(resolve(args[0]).name)
         elif cmd == "env":
             print(resolve(args[0]).shell_env())
+        elif cmd == "apt":
+            # System packages the workflow installs before running this one.
+            print(resolve(args[0]).apt_packages)
         elif cmd == "refs":
             for pkg in load_all():
-                print(f"{pkg.rank}\t{pkg.name}\t{pkg.dist_name}=={pkg.version}\t{pkg.ref}")
+                print(f"{pkg.name}\t{pkg.dist_name}=={pkg.version}\t{pkg.ref}")
         elif cmd == "matrix":
             # Names as a JSON array, for `fromJson` in a workflow matrix.
             wanted = args[0].split() if args and args[0].strip() else None
