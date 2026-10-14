@@ -5,17 +5,19 @@
 # venv, with the Tornado under test already force-installed.
 set -euo pipefail
 
+# --cov-config=/dev/null: thumbor's .coveragerc turns on branch coverage. Branch
+# data cannot be combined with the statement data every other package records,
+# so gen_reports.sh's merged report would fail outright.
+#
 # Coverage flags come from the harness: run_one.sh exports COV_ARGS empty when
 # the run is not measuring coverage, so a release gate does not pay for it. The
-# default below applies when this script is run by hand.
-read -ra cov <<<"${COV_ARGS---cov=tornado --cov-report=term-missing}"
+# default below applies when this script is run by hand. Every --cov flag must
+# live here: with coverage off the harness does not install pytest-cov, and
+# pytest rejects a --cov flag it does not know.
+read -ra cov <<<"${COV_ARGS---cov-config=/dev/null --cov=tornado --cov-report=term-missing}"
 
 args=(
     -o addopts=
-    # thumbor's .coveragerc turns on branch coverage. Branch data cannot be
-    # combined with the statement data every other package records, so
-    # gen_reports.sh's merged report would fail outright.
-    --cov-config=/dev/null
     # pytest-tldr (pulled in by the tests extra) replaces pytest's output,
     # including the "short test summary info" block the CI report quotes.
     -p no:tldr
