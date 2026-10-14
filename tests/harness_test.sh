@@ -132,6 +132,8 @@ reject "non-integer min_coverage is rejected" \
                                             "echo 'min_coverage=lots' >> packages/beta/package.env"
 reject "out-of-range min_coverage is rejected" \
                                             "echo 'min_coverage=101' >> packages/beta/package.env"
+reject "a --cov flag outside COV_ARGS is rejected" \
+                                            "echo 'python -m pytest --cov-config=/dev/null' >> packages/beta/test.sh"
 
 # dependabot.yml must list each package directory explicitly: a missing entry
 # means a pin nobody bumps, and a "/packages/*" glob opens every bump twice.

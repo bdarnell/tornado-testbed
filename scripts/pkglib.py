@@ -211,6 +211,27 @@ def resolve(selector: str) -> Package:
     raise PackageError(f"unknown package: {selector}")
 
 
+def _check_cov_flags(name: str, test_sh: pathlib.Path) -> list[str]:
+    """A --cov flag outside the COV_ARGS default breaks the release gate.
+
+    With COVERAGE=0 the harness exports COV_ARGS empty and does not install
+    pytest-cov, so any other --cov flag reaches a pytest that does not know it
+    and the package fails with a usage error before a single test runs.
+    """
+    problems = []
+    for lineno, line in enumerate(test_sh.read_text().splitlines(), 1):
+        code = line.lstrip()
+        if code.startswith("#") or "COV_ARGS" in code:
+            continue
+        if "--cov" in code:
+            problems.append(
+                f"{name}: test.sh:{lineno} passes a --cov flag outside the "
+                "COV_ARGS default; with coverage off pytest-cov is not "
+                "installed and pytest rejects it"
+            )
+    return problems
+
+
 def check_files(pkg: Package) -> list[str]:
     """Structural problems with a package directory, as a list of messages."""
     problems = []
@@ -222,6 +243,8 @@ def check_files(pkg: Package) -> list[str]:
     test_sh = pkg.directory / "test.sh"
     if test_sh.is_file() and not test_sh.stat().st_mode & 0o111:
         problems.append(f"{pkg.name}: test.sh is not executable")
+    if test_sh.is_file():
+        problems.extend(_check_cov_flags(pkg.name, test_sh))
     setup_sh = pkg.directory / "setup.sh"
     if setup_sh.is_file() and not setup_sh.stat().st_mode & 0o111:
         problems.append(f"{pkg.name}: setup.sh is not executable")
