@@ -185,7 +185,9 @@ mind before assuming a number can simply be pushed up.
   turns benign downstream warnings into failures. Prefer a *targeted*
   `-W ignore::Specific.Warning` over fighting the global filter or shrinking the
   test target. panel needed `pytest-xdist` installed purely so that its
-  `pytest.mark.xdist_group` is a registered mark rather than a warning.
+  `pytest.mark.xdist_group` is a registered mark rather than a warning, and
+  (from 1.10) `pytest-timeout` so that its `timeout = 300` ini option is not an
+  "Unknown config option" warning that aborts collection with INTERNALERROR.
 - **A missing optional dependency can look like a broken test.** flower's broker
   tests failed with `NameError: name 'Retry' is not defined` because
   `broker.py` imports it inside a `try/except ImportError` and `redis` was not
