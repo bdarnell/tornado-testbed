@@ -1,0 +1,182 @@
+# Regenerate every package's constraints.lock and propose the result as one
+# pull request.
+#
+# The locks are what keep the weekly run and the release gate from being broken
+# by downstream drift (a new pytest-asyncio, say): both install under them, so
+# the only thing that changes between two runs of the same pin is Tornado.
+# Drift still has to be taken eventually, and this is where it arrives, as one
+# reviewable pull request a week rather than one per transitive dependency.
+#
+# The refresh runs each package's full suite against the latest *stable*
+# Tornado, the same baseline pins.yml uses, so a red package on the refresh PR
+# is drift and not a Tornado regression. A red package is not a reason to skip
+# the PR: the PR is where that drift gets looked at, and its description says
+# which packages failed.
+#
+# Triggers:
+#   schedule           weekly, an hour before the testbed's own weekly run
+#   push to main       when a dependabot pin bump lands, since a lock is only
+#                      used while it matches its pin (see pkglib.lock_status)
+#   workflow_dispatch  by hand
+#
+# Requires "Allow GitHub Actions to create and approve pull requests" in the
+# repository's Actions settings. Note that a pull request opened with
+# GITHUB_TOKEN does not trigger other workflows, so lint and pins do not run on
+# it; the refresh run linked from its description is its test result.
+name: locks
+
+on:
+  schedule:
+    - cron: "17 5 * * 1"
+  push:
+    branches: [main]
+    paths:
+      - "packages/*/requirements.txt"
+  workflow_dispatch:
+
+permissions: {}
+
+# A newer refresh supersedes an older one: every run regenerates every lock.
+concurrency:
+  group: locks
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    name: Refresh
+    # Upstream only, except by hand. In a fork the schedule and the push
+    # trigger would open lock PRs against the fork for upstream's drift.
+    if: github.event_name == 'workflow_dispatch' || github.repository_owner == 'tornadoweb'
+    # zizmor: see the same note in pins.yml.
+    uses: ./.github/workflows/testbed.yml # zizmor: ignore[self-repository]
+    with:
+      tornado_spec: "tornado"
+      refresh_locks: true
+      # The coverage floors are part of what a new environment has to pass,
+      # and measuring puts pytest-cov and coverage into the lock as well.
+      coverage: true
+      # Report, do not gate: a red package still yields its lock, and the PR
+      # is where it gets looked at.
+      fail_on_regression: false
+    permissions:
+      contents: read
+
+  propose:
+    name: Open or update the lock PR
+    needs: refresh
+    # Even if some packages broke outright: whatever locks were produced are
+    # still worth proposing, and the description lists what is missing.
+    if: always() && needs.refresh.result != 'skipped' && needs.refresh.result != 'cancelled'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      BRANCH: locks/refresh
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Download regenerated locks
+        uses: actions/download-artifact@v8
+        with:
+          pattern: lock-*
+          path: incoming
+          merge-multiple: true
+
+      - name: Download results
+        uses: actions/download-artifact@v8
+        with:
+          pattern: result-*
+          path: collected
+          merge-multiple: true
+
+      # Only <known package>/constraints.lock is copied in, and the result has
+      # to validate: the artifacts were produced by a job that ran downstream
+      # code, so nothing else from them lands in the tree.
+      - name: Apply locks
+        run: |
+          shopt -s nullglob
+          for name in $(python3 scripts/pkglib.py names); do
+            src="incoming/${name}/constraints.lock"
+            if [[ -f "${src}" ]]; then
+              cp "${src}" "packages/${name}/constraints.lock"
+            else
+              echo "::warning title=${name}::no regenerated lock; keeping the committed one"
+            fi
+          done
+          python3 scripts/validate_packages.py
+
+      - name: Commit and open or update the pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BASE: ${{ github.ref_name }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          TOTAL: ${{ needs.refresh.outputs.total }}
+          PASSED: ${{ needs.refresh.outputs.passed }}
+        run: |
+          if git diff --quiet -- packages/; then
+            echo "Every lock is unchanged; nothing to propose."
+            exit 0
+          fi
+
+          # Packages that did not pass, from their result files.
+          failing=""
+          for res in collected/results/*.txt; do
+            [[ -e "${res}" ]] || continue
+            status="$(sed -n 's/^status=//p' "${res}")"
+            name="$(sed -n 's/^package=//p' "${res}")"
+            [[ "${status}" == "PASS" ]] || failing+="- \`${name}\`: ${status}"$'\n'
+          done
+          missing=""
+          for name in $(python3 scripts/pkglib.py names); do
+            [[ -f "incoming/${name}/constraints.lock" ]] || missing+="- \`${name}\`"$'\n'
+          done
+
+          {
+            echo "Regenerated \`constraints.lock\` for every package, from a run"
+            echo "against the latest stable Tornado: ${PASSED:-?}/${TOTAL:-?} passed."
+            echo ""
+            echo "Test results and logs: ${RUN_URL}"
+            echo ""
+            if [[ -n "${failing}" ]]; then
+              echo "### Not passing"
+              echo ""
+              echo "Against stable Tornado, so this is downstream drift. Fix it"
+              echo "(deselect with a reason, pin, or patch the package's setup)"
+              echo "before merging, or the drift lands on main."
+              echo ""
+              printf '%s\n' "${failing}"
+            fi
+            if [[ -n "${missing}" ]]; then
+              echo "### No lock produced (the committed one is kept)"
+              echo ""
+              printf '%s\n' "${missing}"
+            fi
+            echo "Opened by the \`locks\` workflow. Workflows do not run on pull"
+            echo "requests opened with GITHUB_TOKEN, so lint and pins have not run"
+            echo "here; the run linked above is the test result."
+          } > body.md
+
+          title="Refresh dependency locks"
+          [[ -n "${failing}" ]] && title+=" ($(( ${TOTAL:-0} - ${PASSED:-0} )) not passing)"
+
+          gh auth setup-git
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "${BRANCH}"
+          git add packages/*/constraints.lock
+          git commit -q -m "${title}" -m "${RUN_URL}"
+          # The branch is the workflow's own and is rebuilt from main each
+          # time, so a force push replaces last week's proposal.
+          git push --force "https://github.com/${REPO}.git" "HEAD:refs/heads/${BRANCH}"
+
+          existing="$(gh pr list --repo "${REPO}" --head "${BRANCH}" --state open --json number --jq '.[0].number')"
+          if [[ -n "${existing}" ]]; then
+            gh pr edit "${existing}" --repo "${REPO}" --title "${title}" --body-file body.md
+          else
+            gh pr create --repo "${REPO}" --base "${BASE}" --head "${BRANCH}" \
+              --title "${title}" --body-file body.md
+          fi
