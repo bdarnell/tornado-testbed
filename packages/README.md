@@ -32,7 +32,8 @@ Parsed as strict `key=value`, never sourced — the matrix job needs `repo` and
 | `tag_template` | yes | how to build the git tag from the version, e.g. `v{version}` or `{version}`. |
 | `subdir` | yes | directory within the checkout to run tests from (`.` for most). |
 | `install_method` | no | `editable` (default) or `pypi`. |
-| `pypi_extra_deps` | no | extra specs to install alongside, for `pypi` installs. |
+| `optional_dependency_group` | no | for `pypi` installs, one of the package's own `[project.optional-dependencies]` extras (e.g. `tests`) to install with the pinned version. Prefer it to copying the list into `pypi_extra_deps`. |
+| `pypi_extra_deps` | no | extra specs to install alongside, for `pypi` installs. Only for what the package's own extra leaves out. |
 | `apt_packages` | no | space-separated Debian/Ubuntu packages the workflow installs before the run, for command-line tools the suite shells out to. Pair it with a `setup.sh` check so a missing tool is a `SETUP_FAIL`, not a red test. |
 | `min_coverage` | no | percent of Tornado this package must cover. Below it, a *passing* run fails as `COVERAGE_LOW`. |
 

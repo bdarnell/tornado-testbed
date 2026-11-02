@@ -184,10 +184,11 @@ mind before assuming a number can simply be pushed up.
 - **Project-level `filterwarnings=error`** (the whole Jupyter stack, and panel)
   turns benign downstream warnings into failures. Prefer a *targeted*
   `-W ignore::Specific.Warning` over fighting the global filter or shrinking the
-  test target. panel needed `pytest-xdist` installed purely so that its
-  `pytest.mark.xdist_group` is a registered mark rather than a warning, and
-  (from 1.10) `pytest-timeout` so that its `timeout = 300` ini option is not an
-  "Unknown config option" warning that aborts collection with INTERNALERROR.
+  test target. panel needs its test plugins installed purely so its config is
+  valid: `pytest-xdist` (from its `tests` extra) registers
+  `pytest.mark.xdist_group`, and `pytest-timeout` (not in that extra, so in
+  `pypi_extra_deps`) makes its 1.10+ `timeout = 300` ini option known. Missing
+  either one is a warning, which aborts collection with INTERNALERROR.
 - **A missing optional dependency can look like a broken test.** flower's broker
   tests failed with `NameError: name 'Retry' is not defined` because
   `broker.py` imports it inside a `try/except ImportError` and `redis` was not

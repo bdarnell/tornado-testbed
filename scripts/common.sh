@@ -54,6 +54,7 @@ pkg_resolve() { python3 "${PKGLIB}" resolve "$1"; }
 
 # pkg_load <name> -- emit shell assignments for one package's definition.
 # Use as: eval "$(pkg_load flower)"  =>  PKG_NAME, PKG_REPO, PKG_REF,
-# PKG_SUBDIR, PKG_INSTALL_METHOD, PKG_PYPI_EXTRA_DEPS, PKG_VERSION,
+# PKG_SUBDIR, PKG_INSTALL_METHOD, PKG_PYPI_EXTRA_DEPS,
+# PKG_OPTIONAL_DEPENDENCY_GROUP, PKG_VERSION,
 # PKG_DIST_NAME, PKG_DIR, PKG_REQUIREMENTS, PKG_TEST_SH, PKG_SETUP_SH.
 pkg_load() { python3 "${PKGLIB}" env "$1"; }
