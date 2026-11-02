@@ -21,6 +21,13 @@ args=(
     -q
     -p no:cacheprovider
 
+    # ipykernel's pytest config has filterwarnings=error and leaves
+    # asyncio_default_fixture_loop_scope unset, so a pytest-asyncio that warns
+    # about it at configure time (1.4.1.post1 does) aborts the session with
+    # INTERNALERROR before a single test runs. Every async fixture in the suite
+    # is function-scoped, so this changes nothing but the warning.
+    -o asyncio_default_fixture_loop_scope=function
+
     # nose-style module setup() that pytest no longer calls, so this module's
     # kernel client stays None.
     --deselect tests/test_message_spec.py
