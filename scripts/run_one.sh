@@ -2,7 +2,8 @@
 # Run the test suite for a single package (by name) in an isolated
 # uv-managed virtualenv. Each invocation:
 #   1. Creates a fresh .venv under the checkout
-#   2. Installs the package (editable with its test extras, or the pinned wheel)
+#   2. Installs the package (editable with its test extras, or the pinned wheel),
+#      with every other dependency held to packages/<name>/constraints.lock
 #   3. Runs the package's optional setup.sh hook
 #   4. Force-installs the Tornado under test (TORNADO_SPEC)
 #   5. Runs the package's test.sh, streaming output to a log
@@ -26,6 +27,14 @@
 #                           downstream releases are already dropping older
 #                           interpreters -- bokeh 3.10 requires >=3.12 -- so this
 #                           needs to track what the ecosystem builds against.
+#   LOCK_MODE               "use" (default) installs under the package's
+#                           constraints.lock when it is current for this pin and
+#                           interpreter, and resolves unlocked (with a warning,
+#                           and lock=unlocked in the result) when it is missing
+#                           or stale. "refresh" ignores the lock, resolves
+#                           unlocked, and after the tests writes a new lock from
+#                           the environment that was tested. The lock never
+#                           touches tornado: see pkglib.render_lock.
 #   RETRY_TIMEOUT           Re-run once on timeout (default 1). The real-kernel
 #                           ZeroMQ suites deadlock intermittently; see REPORT.md.
 #   COVERAGE                "1" (default) measures Tornado coverage. When "0",
@@ -53,6 +62,7 @@ TORNADO_SPEC="${TORNADO_SPEC:-tornado}"   # e.g. TORNADO_SPEC="tornado==6.5.1"
 TORNADO_EXPECT_VERSION="${TORNADO_EXPECT_VERSION:-}"
 TIMEOUT_SECS="${TIMEOUT_SECS:-900}"
 RETRY_TIMEOUT="${RETRY_TIMEOUT:-1}"
+LOCK_MODE="${LOCK_MODE:-use}"
 
 usage() {
     echo "usage: $0 <name>" >&2
@@ -60,6 +70,10 @@ usage() {
 }
 
 [[ $# -eq 1 ]] || usage
+case "${LOCK_MODE}" in
+    use|refresh) ;;
+    *) echo "LOCK_MODE must be 'use' or 'refresh', got '${LOCK_MODE}'" >&2; exit 2 ;;
+esac
 
 # Resolve the selector and load the package's definition in one step.
 name="$(pkg_resolve "$1")" || exit 2
@@ -79,6 +93,7 @@ tornado_ver="n/a"
 tornado_file="n/a"
 tornado_after="n/a"
 coverage_pct="n/a"
+lock_state="n/a"
 
 # write_result <status> <exit_code>
 # Single writer for results/<name>.txt so every exit path emits the same schema.
@@ -94,6 +109,7 @@ write_result() {
         echo "install_secs=${install_secs}"
         echo "test_secs=${test_secs}"
         echo "attempts=${attempts}"
+        echo "lock=${lock_state}"
     } > "${result}"
 }
 
@@ -144,6 +160,32 @@ fi
 if ! source "${venv}/bin/activate"; then
     install_secs=$(( $(date +%s) - install_start ))
     die SETUP_FAIL 4 "Failed to activate ${venv}"
+fi
+
+# Hold every dependency other than tornado and the package itself to the
+# committed lock, so the only thing that differs between two runs of the same
+# pin is the Tornado under test. UV_CONSTRAINT is exported, so it also covers
+# setup.sh and the `uv pip install`s inside some packages' test.sh.
+venv_python="$(python -c 'import sys; print("%d.%d" % sys.version_info[:2])')"
+if [[ "${LOCK_MODE}" == "refresh" ]]; then
+    lock_state="refreshed"
+    unset UV_CONSTRAINT
+    echo "Lock:         refreshing; resolving unlocked" | tee -a "${log}"
+else
+    lock_status="$(python3 "${PKGLIB}" lock-status "${name}" "${venv_python}" 2>&1)" \
+        || lock_status="stale: ${lock_status}"
+    if [[ "${lock_status}" == "current" ]]; then
+        lock_state="locked"
+        export UV_CONSTRAINT="${PKG_LOCK}"
+        echo "Lock:         ${PKG_LOCK#"${ROOT_DIR}/"}" | tee -a "${log}"
+    else
+        # Not a failure: unlocked is how every run worked before locks, and it
+        # says nothing about which Tornado is tested. It does mean drift can
+        # reach this run, so it is recorded and the report calls it out.
+        lock_state="unlocked"
+        unset UV_CONSTRAINT
+        echo "WARNING: resolving ${name} unlocked (${lock_status})" | tee -a "${log}"
+    fi
 fi
 
 # Install the package.
@@ -264,6 +306,18 @@ test_secs=$((test_end - test_start))
 echo "" | tee -a "${log}"
 echo "exit_code=${rc}" | tee -a "${log}"
 echo "test_runtime_secs=${test_secs}" | tee -a "${log}"
+
+# Freeze after the tests, not before, so the lock also covers what a test.sh
+# installs for itself. Written whatever the tests did: a refresh exists to put
+# the new environment in front of a reviewer, red or green.
+if [[ "${LOCK_MODE}" == "refresh" ]]; then
+    if uv pip freeze --exclude-editable 2>>"${log}" \
+            | python3 "${PKGLIB}" write-lock "${name}" "${venv_python}" 2>>"${log}"; then
+        echo "Wrote ${PKG_LOCK#"${ROOT_DIR}/"}" | tee -a "${log}"
+    else
+        echo "WARNING: could not write ${PKG_LOCK}" | tee -a "${log}"
+    fi
+fi
 
 # Several test commands install more packages mid-run (bokeh and distributed
 # both `uv pip install` inside their test command), so a transitive `tornado<X`

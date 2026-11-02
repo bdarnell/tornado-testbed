@@ -15,6 +15,11 @@ Each package is a directory, packages/<name>/, holding:
     setup.sh          optional post-install hook.
     README.md         what the package exercises and why its suite is shaped
                       the way it is.
+    constraints.lock  generated, never hand-edited: every other distribution in
+                      the package's test environment, frozen from a refresh
+                      run (see LOCK_MODE in run_one.sh). Applied as uv
+                      constraints so drift arrives in one reviewable pull
+                      request instead of in the weekly or release run.
 
 The git tag is derived, not stored: tag_template applied to the version in
 requirements.txt. Storing both invites them to disagree.
@@ -48,6 +53,23 @@ NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_]*$")
 REQ_RE = re.compile(r"^(?P<name>[A-Za-z0-9._-]+)==(?P<version>[A-Za-z0-9._+!-]+)$")
 
 
+# The lock file's name. Deliberately not *.txt: dependabot's pip updater reads
+# every .txt file in a directory it watches as a requirements file, and would
+# then open a pull request per locked transitive dependency -- exactly the
+# noise the lock exists to avoid.
+LOCK_NAME = "constraints.lock"
+# Header lines that tie a lock to what it was generated for. A lock made for a
+# different pin or interpreter is stale, not merely old: it can make the
+# install unsatisfiable, or pin a dependency the new release no longer accepts.
+LOCK_PIN_RE = re.compile(r"^# pin: (?P<pin>\S+)$")
+LOCK_PYTHON_RE = re.compile(r"^# python: (?P<python>\d+\.\d+)$")
+
+
+def normalize(dist: str) -> str:
+    """PEP 503 name normalization, for comparing distribution names."""
+    return re.sub(r"[-_.]+", "-", dist).lower()
+
+
 class PackageError(Exception):
     """A package definition is malformed."""
 
@@ -76,6 +98,14 @@ class Package:
         return self.directory / "requirements.txt"
 
     @property
+    def lock(self) -> pathlib.Path:
+        return self.directory / LOCK_NAME
+
+    @property
+    def pin(self) -> str:
+        return f"{self.dist_name}=={self.version}"
+
+    @property
     def setup_hook(self) -> pathlib.Path | None:
         path = self.directory / "setup.sh"
         return path if path.exists() else None
@@ -97,6 +127,7 @@ class Package:
             "PKG_REQUIREMENTS": str(self.requirements),
             "PKG_TEST_SH": str(self.directory / "test.sh"),
             "PKG_SETUP_SH": str(self.setup_hook or ""),
+            "PKG_LOCK": str(self.lock),
         }
         return "\n".join(f"{k}={shlex.quote(v)}" for k, v in pairs.items())
 
@@ -133,6 +164,84 @@ def parse_requirement(path: pathlib.Path) -> tuple[str, str]:
     if not match:
         raise PackageError(f"{path}: expected 'name==version', got {lines[0]!r}")
     return match.group("name"), match.group("version")
+
+
+def parse_lock(path: pathlib.Path) -> tuple[dict[str, str], list[str]]:
+    """Return ({"pin": ..., "python": ...}, [requirement lines]) from a lock.
+
+    Every requirement must be a plain name==version: a lock is a list of
+    constraints, and anything else (a URL, an editable, an unpinned name) is
+    either not a constraint or not locking anything.
+    """
+    header: dict[str, str] = {}
+    reqs: list[str] = []
+    for lineno, raw in enumerate(path.read_text().splitlines(), 1):
+        line = raw.strip()
+        if not line:
+            continue
+        if line.startswith("#"):
+            for key, regex in (("pin", LOCK_PIN_RE), ("python", LOCK_PYTHON_RE)):
+                match = regex.match(line)
+                if match:
+                    header[key] = match.group(key)
+            continue
+        if not REQ_RE.match(line):
+            raise PackageError(f"{path}:{lineno}: expected 'name==version', got {raw!r}")
+        reqs.append(line)
+    for key in ("pin", "python"):
+        if key not in header:
+            raise PackageError(f"{path}: missing '# {key}: ...' header line")
+    return header, reqs
+
+
+def lock_status(pkg: Package, python: str) -> tuple[str, str]:
+    """("current" | "missing" | "stale", reason) for running under `python`.
+
+    `python` is the venv's major.minor. A lock records the environment of one
+    interpreter, so on another one it is stale rather than approximately right.
+    """
+    if not pkg.lock.is_file():
+        return "missing", f"no {LOCK_NAME}"
+    try:
+        header, _ = parse_lock(pkg.lock)
+    except PackageError as exc:
+        return "stale", str(exc)
+    if header["pin"] != pkg.pin:
+        return "stale", f"generated for {header['pin']}, pin is now {pkg.pin}"
+    if header["python"] != python:
+        return "stale", f"generated for python {header['python']}, running {python}"
+    return "current", ""
+
+
+def render_lock(pkg: Package, python: str, freeze: str) -> str:
+    """A lock file for `pkg` from `uv pip freeze` output.
+
+    Left out: tornado, which the harness force-installs and must never be held
+    back by a constraint; the package under test, whose version requirements.txt
+    owns; and anything not installed from an index (editables, URLs), which a
+    version constraint cannot express.
+    """
+    skip = {"tornado", normalize(pkg.dist_name)}
+    reqs = []
+    for raw in freeze.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        match = REQ_RE.match(line)
+        if not match:
+            continue
+        if normalize(match.group("name")) in skip:
+            continue
+        reqs.append(f"{normalize(match.group('name'))}=={match.group('version')}")
+    reqs.sort()
+    lines = [
+        "# Generated by run_one.sh with LOCK_MODE=refresh. Do not edit by hand;",
+        "# the weekly locks workflow regenerates it.",
+        f"# pin: {pkg.pin}",
+        f"# python: {python}",
+        *reqs,
+    ]
+    return "\n".join(lines) + "\n"
 
 
 def load(name: str) -> Package:
@@ -248,6 +357,17 @@ def check_files(pkg: Package) -> list[str]:
     setup_sh = pkg.directory / "setup.sh"
     if setup_sh.is_file() and not setup_sh.stat().st_mode & 0o111:
         problems.append(f"{pkg.name}: setup.sh is not executable")
+    if pkg.lock.is_file():
+        try:
+            _, reqs = parse_lock(pkg.lock)
+        except PackageError as exc:
+            problems.append(f"{pkg.name}: {exc}")
+        else:
+            held = {normalize(REQ_RE.match(r).group("name")) for r in reqs}
+            # A constraint on tornado would fight the force-install of the
+            # Tornado under test; one on the package itself would fight the pin.
+            for dist in sorted(held & {"tornado", normalize(pkg.dist_name)}):
+                problems.append(f"{pkg.name}: {LOCK_NAME} must not constrain {dist}")
     if pkg.install_method == "pypi" and pkg.dist_name != pkg.name:
         # Not fatal, but the pypi install path installs requirements.txt by
         # name, so a mismatch is worth stating out loud.
@@ -300,6 +420,15 @@ def main(argv: list[str]) -> int:
         elif cmd == "apt":
             # System packages the workflow installs before running this one.
             print(resolve(args[0]).apt_packages)
+        elif cmd == "lock-status":
+            # lock-status <name> <python-major.minor> -> "current", "missing:
+            # <reason>" or "stale: <reason>"
+            state, reason = lock_status(resolve(args[0]), args[1])
+            print(state if not reason else f"{state}: {reason}")
+        elif cmd == "write-lock":
+            # write-lock <name> <python-major.minor>, `uv pip freeze` on stdin.
+            pkg = resolve(args[0])
+            pkg.lock.write_text(render_lock(pkg, args[1], sys.stdin.read()))
         elif cmd == "refs":
             for pkg in load_all():
                 print(f"{pkg.name}\t{pkg.dist_name}=={pkg.version}\t{pkg.ref}")

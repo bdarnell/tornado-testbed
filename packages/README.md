@@ -13,6 +13,7 @@ packages/<name>/
   test.sh            the test command
   setup.sh           optional post-install hook
   README.md          what it exercises, and why its suite is shaped that way
+  constraints.lock   generated: every other dependency, frozen (see below)
 ```
 
 ### requirements.txt
@@ -73,6 +74,36 @@ improves, raise the floor — the report prints a reminder when a package is
 running well clear of its own. Dependabot never touches these values, which is
 the point: a pin bump that guts the test command fails on its own pull request.
 
+### constraints.lock
+
+Every distribution in the package's tested environment except Tornado and the
+package itself, as `name==version`, frozen from a passing-or-not refresh run.
+`run_one.sh` exports it as `UV_CONSTRAINT`, so the package install, `setup.sh`,
+the harness's own pytest install and any `uv pip install` inside `test.sh` all
+resolve to the locked versions. Without it, a new pytest-asyncio or IPython
+reaches the weekly run and the release gate the day it is published, and shows
+up as a red package that has nothing to do with Tornado.
+
+**Never edit it by hand.** The `locks` workflow regenerates all of them weekly,
+and whenever a pin bump lands on main, by running every package with
+`LOCK_MODE=refresh` against stable Tornado, and proposes the result as a single
+pull request whose description lists any package that did not pass. That PR is
+where drift gets handled. To regenerate one locally:
+
+```bash
+LOCK_MODE=refresh ./scripts/run_one.sh ipykernel
+```
+
+A lock records the pin and the Python minor it was made for. If either differs
+from the run (most often: a dependabot bump not yet followed by a refresh), the
+lock is **stale** and the package resolves unlocked, as every package did
+before locks existed. That is a warning, not a failure: it does not change
+which Tornado is tested. The result records `lock=unlocked` and the report
+lists those packages.
+
+It is not `*.txt` on purpose: dependabot reads every `.txt` in a directory it
+watches as a requirements file, and would open a pull request per locked
+transitive dependency.
 
 ## Selection criteria
 

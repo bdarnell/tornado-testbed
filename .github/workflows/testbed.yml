@@ -5,7 +5,12 @@
 #   workflow_call      call it from another repository -- this is how tornado's
 #                      own release build gates on the testbed
 #   schedule           weekly, against tornado master, to keep the curated
-#                      green baseline honest between releases
+#                      green baseline honest between releases. Only in the
+#                      tornadoweb organization: see the `plan` job.
+#
+# Packages install under their committed constraints.lock unless the run is a
+# lock refresh (refresh_locks), which is how .github/workflows/locks.yml
+# regenerates them.
 #
 # All the real logic lives in scripts/ -- keep this file thin.
 name: testbed
@@ -38,6 +43,11 @@ on:
         type: boolean
         required: false
         default: true
+      refresh_locks:
+        description: "Resolve dependencies fresh instead of from constraints.lock, and upload the new locks"
+        type: boolean
+        required: false
+        default: false
 
   workflow_call:
     inputs:
@@ -77,6 +87,14 @@ on:
         type: string
         required: false
         default: "900"
+      refresh_locks:
+        description: >-
+          Resolve each package's dependencies fresh rather than from its
+          constraints.lock, and upload the regenerated locks as lock-<name>
+          artifacts. Used by locks.yml; never by a release gate.
+        type: boolean
+        required: false
+        default: false
     outputs:
       total:
         description: "Number of packages run"
@@ -101,6 +119,15 @@ jobs:
   # differently, and `schedule` supplies none) and expand the package list.
   plan:
     name: Plan
+    # The weekly schedule belongs to the upstream repository. Forks inherit the
+    # cron, and there it only burns the fork's Actions minutes and mails its
+    # owner about upstream's drift. Dispatch and workflow_call are unaffected.
+    #
+    # The owner rather than the full repository name: under workflow_call,
+    # github.repository is the *caller*, so a scheduled caller in tornadoweb
+    # (tornado itself) keeps working, while one in a fork of tornado does not.
+    # Skipping this job skips the whole run; `report` checks for that.
+    if: github.event_name != 'schedule' || github.repository_owner == 'tornadoweb'
     runs-on: ubuntu-24.04
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
@@ -110,6 +137,7 @@ jobs:
       coverage: ${{ steps.cfg.outputs.coverage }}
       fail_on_regression: ${{ steps.cfg.outputs.fail_on_regression }}
       timeout_secs: ${{ steps.cfg.outputs.timeout_secs }}
+      lock_mode: ${{ steps.cfg.outputs.lock_mode }}
     steps:
       # Not a bare checkout: github.repository is the CALLER's repository, so
       # under `workflow_call` this checked out tornado -- which has no scripts/
@@ -137,6 +165,7 @@ jobs:
           IN_COVERAGE: ${{ inputs.coverage }}
           IN_FAIL_ON_REGRESSION: ${{ inputs.fail_on_regression }}
           IN_TIMEOUT_SECS: ${{ inputs.timeout_secs }}
+          IN_REFRESH_LOCKS: ${{ inputs.refresh_locks }}
           EVENT_NAME: ${{ github.event_name }}
         run: |
           # `schedule` runs have no inputs at all, so every value needs a
@@ -156,6 +185,7 @@ jobs:
             echo "coverage=${coverage}"
             echo "fail_on_regression=$([[ "${IN_FAIL_ON_REGRESSION}" == "false" ]] && echo 0 || echo 1)"
             echo "timeout_secs=${IN_TIMEOUT_SECS:-900}"
+            echo "lock_mode=$([[ "${IN_REFRESH_LOCKS}" == "true" ]] && echo refresh || echo use)"
           } >> "$GITHUB_OUTPUT"
 
       - name: Expand package list
@@ -200,6 +230,7 @@ jobs:
           # job on its own pin plus the shared build constraints.
           cache-dependency-glob: |
             packages/${{ matrix.package }}/requirements.txt
+            packages/${{ matrix.package }}/constraints.lock
             build-constraints.txt
 
       - name: Download tornado artifact
@@ -256,6 +287,7 @@ jobs:
           COVERAGE: ${{ needs.plan.outputs.coverage }}
           TIMEOUT_SECS: ${{ needs.plan.outputs.timeout_secs }}
           FAIL_ON_REGRESSION: ${{ needs.plan.outputs.fail_on_regression }}
+          LOCK_MODE: ${{ needs.plan.outputs.lock_mode }}
         run: |
           rc=0
           ./scripts/run_one.sh "${PACKAGE}" || rc=$?
@@ -289,6 +321,28 @@ jobs:
             logs/${{ matrix.package }}.log
           if-no-files-found: warn
 
+      # Staged under lock-out/<package>/ so the artifact keeps the package
+      # name in its path: locks.yml merges every lock-* artifact into one
+      # directory, and a bare constraints.lock from each would collide.
+      - name: Stage regenerated lock
+        if: always() && needs.plan.outputs.lock_mode == 'refresh'
+        env:
+          PACKAGE: ${{ matrix.package }}
+        run: |
+          lock="packages/${PACKAGE}/constraints.lock"
+          if [[ -f "${lock}" ]]; then
+            mkdir -p "lock-out/${PACKAGE}"
+            cp "${lock}" "lock-out/${PACKAGE}/constraints.lock"
+          fi
+
+      - name: Upload regenerated lock
+        if: always() && needs.plan.outputs.lock_mode == 'refresh'
+        uses: actions/upload-artifact@v7
+        with:
+          name: lock-${{ matrix.package }}
+          path: lock-out/
+          if-no-files-found: warn
+
       - name: Upload raw coverage data
         if: always() && needs.plan.outputs.coverage == '1'
         uses: actions/upload-artifact@v7
@@ -300,7 +354,9 @@ jobs:
   report:
     name: Report
     needs: [plan, run]
-    if: always()
+    # always() so a red package still gets a report, but not when `plan` was
+    # skipped (a fork's schedule) or failed: there is nothing to report on.
+    if: always() && needs.plan.result == 'success'
     runs-on: ubuntu-24.04
     outputs:
       total: ${{ steps.report.outputs.total }}
