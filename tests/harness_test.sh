@@ -103,6 +103,10 @@ check "apt_packages is reported for the workflow" "gifsicle libjpeg-turbo-progs"
 out="$(cd "${root}" && python3 scripts/pkglib.py env alpha 2>&1 | grep '^PKG_REF=')"
 check "ref is derived from tag_template + pin" "PKG_REF=v1.0.0" "${out}"
 
+printf 'install_method=pypi\noptional_dependency_group=tests\n' >> "${root}/packages/beta/package.env"
+out="$(cd "${root}" && python3 scripts/pkglib.py env beta 2>&1 | grep '^PKG_OPTIONAL_DEPENDENCY_GROUP=')"
+check "optional_dependency_group is exported" "PKG_OPTIONAL_DEPENDENCY_GROUP=tests" "${out}"
+
 # Each of these must be rejected, because every one of them is a way for the
 # harness to test something other than what it claims.
 reject() {
@@ -126,6 +130,10 @@ reject "tag_template without {version} is rejected" \
 reject "two requirements in one file is rejected" \
                                             "echo 'extra==1.0' >> packages/beta/requirements.txt"
 reject "unpinned requirement is rejected"   "echo 'beta' > packages/beta/requirements.txt"
+reject "optional_dependency_group without install_method=pypi is rejected" \
+                                            "echo 'optional_dependency_group=tests' >> packages/beta/package.env"
+reject "optional_dependency_group naming two extras is rejected" \
+                                            "printf 'install_method=pypi\noptional_dependency_group=tests,docs\n' >> packages/beta/package.env"
 reject "non-executable test.sh is rejected" "chmod -x packages/beta/test.sh"
 reject "missing README.md is rejected"      "rm packages/beta/README.md"
 reject "non-integer min_coverage is rejected" \

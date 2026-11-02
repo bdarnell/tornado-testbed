@@ -153,8 +153,16 @@ if [[ "${PKG_INSTALL_METHOD}" == "pypi" ]]; then
     # toolchain or network-fetched assets). Tests still run from the cloned
     # source tree, but against the site-packages version. requirements.txt is
     # the same pin the checkout's ref was derived from.
-    echo ">>> PyPI install: uv pip install -r ${PKG_REQUIREMENTS}" >>"${log}"
-    if uv pip install -r "${PKG_REQUIREMENTS}" >>"${log}" 2>&1; then
+    #
+    # optional_dependency_group names one of the package's own extras (its test
+    # dependencies). It is spelled from the pin rather than written down twice,
+    # and installed in the same resolve so it cannot move the pinned version.
+    pypi_specs=(-r "${PKG_REQUIREMENTS}")
+    if [[ -n "${PKG_OPTIONAL_DEPENDENCY_GROUP}" ]]; then
+        pypi_specs+=("${PKG_DIST_NAME}[${PKG_OPTIONAL_DEPENDENCY_GROUP}]==${PKG_VERSION}")
+    fi
+    echo ">>> PyPI install: uv pip install ${pypi_specs[*]}" >>"${log}"
+    if uv pip install "${pypi_specs[@]}" >>"${log}" 2>&1; then
         install_ok=1
         if [[ -n "${PKG_PYPI_EXTRA_DEPS}" ]]; then
             echo ">>> Extra deps: ${PKG_PYPI_EXTRA_DEPS}" >>"${log}"

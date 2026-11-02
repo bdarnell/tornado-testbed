@@ -37,11 +37,19 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 PKGDEFS_DIR = ROOT / "packages"
 
 REQUIRED_KEYS = {"repo", "tag_template", "subdir"}
-OPTIONAL_KEYS = {"install_method", "pypi_extra_deps", "min_coverage", "apt_packages"}
+OPTIONAL_KEYS = {
+    "install_method",
+    "pypi_extra_deps",
+    "optional_dependency_group",
+    "min_coverage",
+    "apt_packages",
+}
 KNOWN_KEYS = REQUIRED_KEYS | OPTIONAL_KEYS
 INSTALL_METHODS = {"", "editable", "pypi"}
 
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_]*$")
+# An extra name from [project.optional-dependencies] (PEP 685 normalizes these).
+EXTRA_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 # A single `name==version` requirement. Deliberately strict: these files exist
 # to pin exactly one downstream release, and dependabot writes them back in
 # this shape.
@@ -60,6 +68,7 @@ class Package:
     subdir: str
     install_method: str
     pypi_extra_deps: str
+    optional_dependency_group: str
     min_coverage: int | None
     apt_packages: str
     dist_name: str
@@ -89,6 +98,7 @@ class Package:
             "PKG_SUBDIR": self.subdir,
             "PKG_INSTALL_METHOD": self.install_method or "editable",
             "PKG_PYPI_EXTRA_DEPS": self.pypi_extra_deps,
+            "PKG_OPTIONAL_DEPENDENCY_GROUP": self.optional_dependency_group,
             "PKG_MIN_COVERAGE": "" if self.min_coverage is None else str(self.min_coverage),
             "PKG_APT_PACKAGES": self.apt_packages,
             "PKG_VERSION": self.version,
@@ -158,6 +168,21 @@ def load(name: str) -> Package:
             f"{directory/'package.env'}: install_method must be one of "
             f"{sorted(INSTALL_METHODS)}, got {install_method!r}"
         )
+    # The package's own test extra, installed alongside the pinned wheel so the
+    # harness does not keep a copy of that list. The editable path already tries
+    # the common test-extra names itself, so this only means anything for pypi.
+    group = env.get("optional_dependency_group", "")
+    if group:
+        if install_method != "pypi":
+            raise PackageError(
+                f"{directory/'package.env'}: optional_dependency_group is only "
+                f"used with install_method=pypi"
+            )
+        if not EXTRA_RE.match(group):
+            raise PackageError(
+                f"{directory/'package.env'}: optional_dependency_group must be a "
+                f"single extra name, got {group!r}"
+            )
     # The floor below which this package's tornado coverage is treated as a
     # broken test command rather than a real measurement. Absent means unchecked.
     min_coverage: int | None = None
@@ -189,6 +214,7 @@ def load(name: str) -> Package:
         subdir=env["subdir"],
         install_method=install_method,
         pypi_extra_deps=env.get("pypi_extra_deps", ""),
+        optional_dependency_group=group,
         min_coverage=min_coverage,
         apt_packages=env.get("apt_packages", ""),
         dist_name=dist_name,
