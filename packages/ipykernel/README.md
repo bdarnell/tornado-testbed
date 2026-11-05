@@ -29,3 +29,12 @@ so without that hook the suite fails at conftest import with no
 
 All four are environment issues, not Tornado; each carries its reason inline in
 `test.sh`.
+
+## pytest-asyncio loop scope
+
+`test.sh` passes `-o asyncio_default_fixture_loop_scope=function`. ipykernel
+leaves that option unset under `filterwarnings = ["error", ...]`, so
+pytest-asyncio 1.4.1.post1's configure-time deprecation warning becomes an
+INTERNALERROR (exit 3, zero tests run). All of the suite's async fixtures are
+function-scoped, so the setting only silences the warning. Drop it once an
+ipykernel release sets the option itself.
