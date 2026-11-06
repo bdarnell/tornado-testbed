@@ -164,8 +164,11 @@ jobs:
           [[ -n "${failing}" ]] && title+=" ($(( ${TOTAL:-0} - ${PASSED:-0} )) not passing)"
 
           gh auth setup-git
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Deliberately not a real account: an author email is unauthenticated
+          # text, and borrowing github-actions[bot]'s would imply an identity
+          # that means nothing here. What authorizes the push is the token.
+          git config user.name "testbed-locks"
+          git config user.email "testbed-locks@invalid"
           git checkout -B "${BRANCH}"
           git add packages/*/constraints.lock
           git commit -q -m "${title}" -m "${RUN_URL}"
