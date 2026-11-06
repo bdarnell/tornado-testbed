@@ -10,16 +10,16 @@ certifi==2026.10.23
 cffi==2.1.1
 cfgv==3.5.0
 click-option-group==0.5.9
-click==8.5.0
+click==8.5.1
 colorama==0.4.6
-coverage==7.17.0
+coverage==7.17.2
 cssselect2==0.10.1
 defusedxml==0.7.1
 derpconf==0.8.4
 dill==0.4.1
 distlib==0.4.4
 execnet==2.1.2
-filelock==4.2.7
+filelock==4.2.9
 flake8==7.5.0
 identify==2.6.20
 iniconfig==2.3.1
@@ -35,7 +35,7 @@ piexif==1.1.3
 pillow-avif-plugin==1.6.0
 pillow-heif==1.8.1
 pillow==12.3.0
-platformdirs==4.14.3
+platformdirs==4.14.5
 pluggy==1.7.0
 pre-commit==4.7.0
 preggy==1.4.4
@@ -52,7 +52,7 @@ pytest-cov==7.1.0
 pytest-tldr==0.2.6
 pytest-xdist==3.8.0
 pytest==7.4.4
-python-discovery==1.9.1
+python-discovery==1.9.5
 pytz==2026.6
 pywavelets==1.10.0
 pyyaml==6.0.3
@@ -69,7 +69,7 @@ tinycss2==1.5.1
 tomlkit==0.15.2
 unidecode==1.4.0
 urllib3==2.8.0
-virtualenv==21.15.2
+virtualenv==21.15.6
 webcolors==1.13
 webencodings==0.6.1
 yanc==0.3.3

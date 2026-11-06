@@ -2,9 +2,9 @@
 # the weekly locks workflow regenerates it.
 # pin: distributed==2026.8.0
 # python: 3.13
-click==8.5.0
+click==8.5.1
 cloudpickle==3.1.2
-coverage==7.17.0
+coverage==7.17.2
 dask==2026.8.0
 fsspec==2026.9.0
 iniconfig==2.3.1
