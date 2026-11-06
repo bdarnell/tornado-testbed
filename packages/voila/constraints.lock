@@ -13,7 +13,7 @@ bleach==6.4.0
 certifi==2026.10.23
 cffi==2.1.1
 charset-normalizer==3.5.2
-coverage==7.17.0
+coverage==7.17.2
 defusedxml==0.7.1
 fastjsonschema==2.22.3
 fqdn==1.6.0
@@ -22,7 +22,7 @@ iniconfig==2.3.1
 isoduration==20.11.0
 jinja2==3.1.6
 json5==0.17.3
-jsonpointer==3.7
+jsonpointer==3.10
 jsonschema-specifications==2025.9.1
 jsonschema==4.26.0
 jupyter-client==8.10.0
@@ -40,7 +40,7 @@ nbconvert==7.17.2
 nbformat==5.11.1
 packaging==26.3
 pandocfilters==1.5.1
-platformdirs==4.14.3
+platformdirs==4.14.5
 pluggy==1.7.0
 prometheus-client==0.26.0
 ptyprocess==0.7.0
@@ -51,7 +51,7 @@ pytest==9.2.0
 python-dateutil==4.0.0
 python-json-logger==4.2.0
 pyyaml==6.0.3
-pyzmq==27.2.0
+pyzmq==27.3.0
 referencing==0.37.0
 requests==2.34.2
 rfc3339-validator==0.1.4
@@ -60,7 +60,7 @@ rfc3987-syntax==1.1.0
 rpds-py==2026.9.1
 send2trash==2.1.0
 six==1.17.0
-soupsieve==3.0.4
+soupsieve==4.0.1
 terminado==0.18.1
 tinycss2==1.5.1
 traitlets==5.16.1
