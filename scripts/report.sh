@@ -47,7 +47,7 @@ try:
 except Exception:
     floors = {}
 
-rows, counts = [], {}
+rows, counts, unlocked = [], {}, []
 for path in sorted(glob.glob(os.path.join(results_dir, "*.txt"))):
     if os.path.basename(path) == "summary.txt":
         continue
@@ -60,6 +60,10 @@ for path in sorted(glob.glob(os.path.join(results_dir, "*.txt"))):
     name = kv.get("package") or os.path.splitext(os.path.basename(path))[0]
     status = kv.get("status", "UNKNOWN")
     counts[status] = counts.get(status, 0) + 1
+    # Only an explicit "unlocked": results from before locks have no lock= line,
+    # and a refresh run is unlocked on purpose.
+    if kv.get("lock") == "unlocked":
+        unlocked.append(name)
     rows.append((name, status, kv.get("exit_code", "?"),
                  kv.get("tornado", "?"), kv.get("test_secs", "?"),
                  kv.get("coverage_pct", "n/a")))
@@ -95,6 +99,17 @@ for name, status, rc, tornado, secs, cov in rows:
     if show_cov:
         row += f" {cov if cov in ('n/a', '') else cov + '%'} |"
     out.append(row)
+
+# Not a failure, but worth seeing: these resolved their dependencies fresh, so
+# a red one may be drift rather than Tornado.
+if unlocked:
+    out.append("")
+    out.append("⚠️ **Ran without a current lock:** "
+               + ", ".join(f"`{n}`" for n in unlocked)
+               + ". Their dependencies were resolved fresh, so a failure here "
+               "may be downstream drift rather than Tornado. The `locks` "
+               "workflow regenerates `constraints.lock`; each log says why it "
+               "was not used.")
 
 # A floor that sits far below what a package actually covers stops being a
 # check. Nothing else would ever prompt anyone to raise it, so say so here.

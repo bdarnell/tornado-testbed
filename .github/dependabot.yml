@@ -5,6 +5,11 @@
 # is derived from that version via tag_template in package.env, which is why the
 # version is the only thing that needs managing here.
 #
+# Everything else in a package's environment is held by its constraints.lock,
+# which dependabot does not touch (it is not a *.txt file, which dependabot would
+# read as requirements). .github/workflows/locks.yml regenerates those, weekly
+# and after a bump here lands, as one pull request.
+#
 # .github/workflows/pins.yml runs the affected package on each of these pull
 # requests, so a bump that needs its deselects re-curated says so on its own PR
 # rather than during a release build.

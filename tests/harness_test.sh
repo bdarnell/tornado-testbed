@@ -161,6 +161,49 @@ reject "a dependabot.yml entry with no package is rejected" \
                                             "dependabot /packages/alpha /packages/beta /packages/gamma"
 reject "a dependabot.yml glob is rejected"  "dependabot '/packages/*'"
 
+echo "== constraints.lock =="
+
+# lock <root> <name> <pin> <python> [requirement...] -- write a lock by hand.
+lock() {
+    local root="$1" name="$2" pin="$3" py="$4"; shift 4
+    { echo "# pin: ${pin}"; echo "# python: ${py}"; printf '%s\n' "$@"; } \
+        > "${root}/packages/${name}/constraints.lock"
+}
+r="$(new_root)"
+make_pkg "${r}" alpha 'true'
+out="$(cd "${r}" && python3 scripts/pkglib.py lock-status alpha 3.13 2>&1)"
+check "no lock is missing" "missing: no constraints.lock" "${out}"
+lock "${r}" alpha alpha==1.0.0 3.13 six==1.16.0
+out="$(cd "${r}" && python3 scripts/pkglib.py lock-status alpha 3.13 2>&1)"
+check "a lock for this pin and python is current" "current" "${out}"
+out="$(cd "${r}" && python3 scripts/pkglib.py lock-status alpha 3.12 2>&1)"
+check "a lock for another python is stale" \
+    "stale: generated for python 3.13, running 3.12" "${out}"
+lock "${r}" alpha alpha==0.9.0 3.13 six==1.16.0
+out="$(cd "${r}" && python3 scripts/pkglib.py lock-status alpha 3.13 2>&1)"
+check "a lock for another pin is stale" \
+    "stale: generated for alpha==0.9.0, pin is now alpha==1.0.0" "${out}"
+
+# The freeze filter: tornado is force-installed and the package's version is
+# its pin, so neither may be locked; editables and URLs cannot be constraints.
+out="$(cd "${r}" && printf '%s\n' 'Six==1.16.0' 'tornado==6.5' 'alpha==1.0.0' \
+        '-e file:///x' 'foo @ git+https://example.invalid/foo' 'Zope.Interface==7.0' \
+    | python3 scripts/pkglib.py write-lock alpha 3.13 \
+    && grep -v '^#' packages/alpha/constraints.lock | tr '\n' ' ')"
+check "write-lock keeps only index pins other than tornado and the package" \
+    "six==1.16.0 zope-interface==7.0 " "${out}"
+out="$(cd "${r}" && python3 scripts/pkglib.py lock-status alpha 3.13 2>&1)"
+check "a freshly written lock is current" "current" "${out}"
+
+reject "a lock that constrains tornado is rejected" \
+    "printf '# pin: beta==1.0.0\n# python: 3.13\ntornado==6.5\n' > packages/beta/constraints.lock"
+reject "a lock that constrains its own package is rejected" \
+    "printf '# pin: beta==1.0.0\n# python: 3.13\nbeta==1.0.0\n' > packages/beta/constraints.lock"
+reject "a lock with an unpinned line is rejected" \
+    "printf '# pin: beta==1.0.0\n# python: 3.13\nsix\n' > packages/beta/constraints.lock"
+reject "a lock without its header is rejected" \
+    "printf 'six==1.16.0\n' > packages/beta/constraints.lock"
+
 echo "== report.sh =="
 
 fixtures="$(mktemp -d -p "${TMPROOT}")"
@@ -189,6 +232,19 @@ check "FAIL_ON_REGRESSION=0 reports without failing" "0" "$?"
 out="$(RESULTS_DIR="${fixtures}/results" LOGS_DIR="${fixtures}/logs" \
     "${REPO}/scripts/report.sh" 2>&1 | grep -c '| probe |')"
 check "every package appears in the table" "1" "${out}"
+
+# An unlocked run is called out but does not change the verdict.
+unl="$(mktemp -d -p "${TMPROOT}")"
+mkdir -p "${unl}/results" "${unl}/logs"
+printf 'package=loose\nstatus=PASS\nexit_code=0\nlock=unlocked\n' > "${unl}/results/loose.txt"
+printf 'package=tight\nstatus=PASS\nexit_code=0\nlock=locked\n' > "${unl}/results/tight.txt"
+out="$(RESULTS_DIR="${unl}/results" LOGS_DIR="${unl}/logs" "${REPO}/scripts/report.sh" 2>&1)"
+check "an unlocked package still passes the gate" "0" "$?"
+# shellcheck disable=SC2016  # literal backticks
+check "an unlocked package is named in the report" "1" \
+    "$(grep -c 'Ran without a current lock.*`loose`' <<<"${out}")"
+# shellcheck disable=SC2016  # literal backticks
+check "a locked package is not" "0" "$(grep -c 'lock.*`tight`' <<<"${out}")"
 
 echo "== changed_packages.sh =="
 
@@ -322,6 +378,47 @@ else
 
     check "no floor declared means no check" "PASS 0" \
         "$(run_status 'true' TORNADO_SPEC=tornado COVERAGE=1)"
+
+    # Locks. The stub package depends on nothing, so the test body installs a
+    # real distribution and checks which version it got: WANT=1.16.0 means
+    # exactly that, WANT=!1.16.0 means anything newer (whatever six is now).
+    # shellcheck disable=SC2016  # evaluated inside the package
+    six_body='uv pip install -q six && python -c "import six, sys, os; w = os.environ[\"WANT\"]; sys.exit((six.__version__ == w.lstrip(\"!\")) == w.startswith(\"!\"))"'
+    # run_one.sh builds its venvs with PYTHON_VERSION, 3.13 unless overridden.
+    py_minor="${PYTHON_VERSION:-3.13}"
+
+    r="$(new_root)"
+    make_pkg "${r}" subject "${six_body}"
+    lock "${r}" subject subject==1.0.0 "${py_minor}" six==1.16.0
+    ( cd "${r}" && TORNADO_SPEC=tornado WANT=1.16.0 ./scripts/run_one.sh subject >/dev/null 2>&1 )
+    rc=$?
+    check "a current lock holds what test.sh installs" "PASS 0 lock=locked" \
+        "$(awk -F= '/^status=/ {print $2}' "${r}/results/subject.txt") ${rc} $(grep '^lock=' "${r}/results/subject.txt")"
+
+    r="$(new_root)"
+    make_pkg "${r}" subject "${six_body}"
+    lock "${r}" subject subject==0.9.0 "${py_minor}" six==1.16.0
+    ( cd "${r}" && TORNADO_SPEC=tornado WANT=!1.16.0 ./scripts/run_one.sh subject >/dev/null 2>&1 )
+    rc=$?
+    check "a stale lock is not applied, and the run says so" "PASS 0 lock=unlocked" \
+        "$(awk -F= '/^status=/ {print $2}' "${r}/results/subject.txt") ${rc} $(grep '^lock=' "${r}/results/subject.txt")"
+
+    # A refresh ignores the old lock, still reports the real test result, and
+    # leaves a current lock behind -- even when the suite fails.
+    r="$(new_root)"
+    make_pkg "${r}" subject "${six_body}; exit 3"
+    lock "${r}" subject subject==1.0.0 "${py_minor}" six==1.16.0
+    ( cd "${r}" && LOCK_MODE=refresh TORNADO_SPEC=tornado WANT=!1.16.0 \
+        ./scripts/run_one.sh subject >/dev/null 2>&1 )
+    rc=$?
+    check "a refresh reports the suite's own result" "FAIL 3 lock=refreshed" \
+        "$(awk -F= '/^status=/ {print $2}' "${r}/results/subject.txt") ${rc} $(grep '^lock=' "${r}/results/subject.txt")"
+    check "a refresh writes the tested environment" "1 0" \
+        "$(grep -c '^six==' "${r}/packages/subject/constraints.lock") $(grep -c '^six==1.16.0$' "${r}/packages/subject/constraints.lock")"
+    check "a refreshed lock is current" "current" \
+        "$(cd "${r}" && python3 scripts/pkglib.py lock-status subject "${py_minor}")"
+    check "a refreshed lock leaves tornado alone" "0" \
+        "$(grep -c '^tornado==' "${r}/packages/subject/constraints.lock")"
 
     # uv errors on a constraints file that is not there, so pointing at one
     # unconditionally turned every install into an INSTALL_FAIL. A checkout

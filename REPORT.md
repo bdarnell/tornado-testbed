@@ -56,8 +56,13 @@ asserts its version is the one imported — see [`integration/`](integration/) f
 the tornado-side patch and its reasoning.
 
 The workflow runs packages as a job matrix (one per package, `fail-fast: false`)
-and runs weekly against `master`, so drift surfaces between releases rather than
-during one.
+and runs weekly against `master`, so a Tornado change that breaks a package
+surfaces between releases rather than during one. Every package installs under
+its committed `constraints.lock`, so that weekly run and the release gate see
+the same downstream environment and differ only in Tornado. Downstream drift
+comes in separately, on the weekly `locks` pull request (see
+[`packages/README.md`](packages/README.md#constraintslock)). Both scheduled
+workflows run only in the `tornadoweb` organization, not in forks.
 
 ## Does the gate actually catch anything?
 
@@ -212,9 +217,13 @@ mind before assuming a number can simply be pushed up.
 - **Orphaned test processes** from killed runs (voila kernels especially) pile
   up and contend for CPU — `pgrep -f pytest` before trusting timing.
 - **Dependency drift shows up as a permanent red run**, which hides the Tornado
-  regressions the harness exists to find. Deselect that kind of failure, with
-  the reason on the line above the deselect in the package's `test.sh`, so that
-  a red package means a Tornado regression.
+  regressions the harness exists to find. Each package's `constraints.lock`
+  keeps drift out of the weekly run and the release gate; it arrives instead on
+  the weekly `locks` pull request, run against stable Tornado. When a package is
+  red there, deselect the failure with the reason on the line above it in
+  `test.sh` (or pin, or set an option, as ipykernel does for pytest-asyncio's
+  loop scope) before merging. Before locks, pytest-asyncio 1.4.1.post1 turned
+  ipykernel red in the weekly run with an INTERNALERROR at configure time.
 - **Drift can also break the *install*, not just the tests**, and a newer pin is
   not always the cure: hatchling 1.32.1 broke `hatch_jupyter_builder` for every
   version of jupyter_server and notebook at once. That is what
